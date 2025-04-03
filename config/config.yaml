@@ -1,0 +1,31 @@
+# MySQL配置
+mysql:
+  host: "localhost"
+  port: 3306
+  user: "root"
+  password: "root"
+  dbname: "shortlink"
+  max_idle_conns: 10
+  max_open_conns: 100
+  conn_max_lifetime: 3600
+
+# Redis配置
+redis:
+  host: "localhost"
+  port: 6379
+  password: ""
+  db: 0
+  pool_size: 100
+  min_idle_conns: 10
+  max_retries: 3
+  dial_timeout: 5
+  read_timeout: 3
+  write_timeout: 3
+
+# 应用配置
+app:
+  host: "localhost"
+  port: 8080
+  mode: "debug"  # debug, release, test
+  jwt_secret: "your_jwt_secret"
+  jwt_expire: 24  # 小时
