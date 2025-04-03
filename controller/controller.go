@@ -2,6 +2,7 @@ package controller
 
 import (
 	"net/http"
+	"shortLink/model"
 	"shortLink/service"
 
 	"github.com/gin-gonic/gin"
@@ -23,6 +24,14 @@ func ShortenURL(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "参数错误"})
 		return
 	}
+	//判断是否存在
+	ShortUrl, err := model.IsOriginalURLExist(req.URL)
+	if err == nil {
+		c.JSON(http.StatusOK, gin.H{"short_url": ShortUrl})
+		return
+	}
+
+	//不存在，生成短链接
 	shortUrl, err := service.Shorten(req.URL)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})

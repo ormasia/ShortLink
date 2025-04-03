@@ -1,17 +1,27 @@
 package model
 
 import (
-	"database/sql"
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
 
 	_ "github.com/go-sql-driver/mysql"
 )
 
-var db *sql.DB
+var db *gorm.DB
 
 func InitDB(dataSource string) error {
 	var err error
-	db, err = sql.Open("mysql", dataSource)
+	db, err = gorm.Open(mysql.Open(dataSource), &gorm.Config{})
 	return err
+}
+
+type URLMapping struct {
+	ShortURL    string `gorm:"primaryKey"`
+	OriginalURL string `gorm:"not null"`
+}
+
+func (URLMapping) TableName() string {
+	return "url_mapping" // 显式指定表名
 }
 
 // SaveURLMapping 保存短链接与原始URL的映射关系
@@ -22,8 +32,12 @@ func InitDB(dataSource string) error {
 // 返回：
 //   - error: 错误信息，如果保存成功则为nil
 func SaveURLMapping(shortURL, originalURL string) error {
-	_, err := db.Exec("INSERT INTO url_mapping (short_url, original_url) VALUES (?, ?)", shortURL, originalURL)
-	return err
+	URLMapping := URLMapping{
+		ShortURL:    shortURL,
+		OriginalURL: originalURL,
+	}
+	result := db.Create(&URLMapping)
+	return result.Error
 }
 
 // GetOriginalURL 获取原始URL
@@ -34,7 +48,23 @@ func SaveURLMapping(shortURL, originalURL string) error {
 //   - string: 原始URL
 //   - error: 错误信息，如果获取成功则为nil
 func GetOriginalURL(shortURL string) (string, error) {
-	var original string
-	err := db.QueryRow("SELECT original_url FROM url_mapping WHERE short_url = ?", shortURL).Scan(&original)
-	return original, err
+	var mapping URLMapping
+	result := db.First(&mapping, "short_url = ?", shortURL)
+	if result.Error != nil {
+		return "", result.Error
+	}
+	return mapping.OriginalURL, nil
+}
+
+// 查询长连接是否存在
+// 参数：
+//   - originalURL: 原始URL
+//
+// 返回：
+//   - string: 短链接
+//   - error: 错误信息，如果查询成功则为nil
+func IsOriginalURLExist(originalURL string) (string, error) {
+	var mapping URLMapping
+	db.First(&mapping, "original_url = ?", originalURL)
+	return mapping.ShortURL, nil
 }

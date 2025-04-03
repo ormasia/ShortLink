@@ -29,7 +29,7 @@ func TestMain(m *testing.M) {
 
 func cleanup() error {
 	// 清空测试表
-	_, err := db.Exec("TRUNCATE TABLE id_generator")
+	_, err := db1.Exec("TRUNCATE TABLE id_generator")
 	return err
 }
 

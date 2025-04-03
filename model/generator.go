@@ -1,13 +1,30 @@
 package model
 
-// 使用数据库自增主键生成ID
+import "errors"
+
+type IDGenerator struct {
+	ID int64 `gorm:"primaryKey"`
+}
+
+func (IDGenerator) TableName() string {
+	return "id_generator" // 显式指定表名
+}
+
+// GenerateID 使用数据库自增主键生成ID
 func GenerateID() (int64, error) {
-	res, err := db.Exec("INSERT INTO id_generator () VALUES ()")
-	if err != nil {
-		return 0, err
+	if db == nil {
+		return 0, errors.New("数据库未初始化")
 	}
-	id, _ := res.LastInsertId()
-	return id, nil
+
+	// 创建新记录
+	generator := IDGenerator{}
+	//插入到指定表
+	result := db.Create(&generator)
+	if result.Error != nil {
+		return 0, result.Error
+	}
+
+	return generator.ID, nil
 }
 
 /*
