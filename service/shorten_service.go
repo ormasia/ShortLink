@@ -21,12 +21,15 @@ func Shorten(url string) (string, error) {
 	}
 
 	// 生成唯一ID
-	id := model.GenerateID()
+	id, err := model.GenerateID()
+	if err != nil {
+		return "", err
+	}
 	// 将ID转换为短链接key
 	shortKey := pkg.EncodeID(id)
 
 	// 将短链接与原始URL的映射关系保存到数据库
-	err := model.SaveURLMapping(shortKey, url)
+	err = model.SaveURLMapping(shortKey, url)
 	if err != nil {
 		return "", err
 	}

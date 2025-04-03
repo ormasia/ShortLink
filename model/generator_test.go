@@ -35,14 +35,20 @@ func cleanup() error {
 
 func TestGenerateID(t *testing.T) {
 	// 测试ID生成
-	id := GenerateID()
+	id, err := GenerateID()
+	if err != nil {
+		t.Fatalf("生成ID失败: %v", err)
+	}
 
 	if id <= 0 {
 		t.Errorf("生成的ID应该大于0，实际得到: %d", id)
 	}
 
 	// 测试生成的ID是否递增
-	nextID := GenerateID()
+	nextID, err := GenerateID()
+	if err != nil {
+		t.Fatalf("生成ID失败: %v", err)
+	}
 
 	if nextID <= id {
 		t.Errorf("第二个ID应该大于第一个ID，第一个: %d, 第二个: %d", id, nextID)
