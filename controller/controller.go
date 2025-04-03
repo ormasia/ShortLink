@@ -25,8 +25,8 @@ func ShortenURL(c *gin.Context) {
 		return
 	}
 	//判断是否存在
-	ShortUrl, err := model.IsOriginalURLExist(req.URL)
-	if err == nil {
+	ShortUrl := model.IsOriginalURLExist(req.URL)
+	if ShortUrl != "" {
 		c.JSON(http.StatusOK, gin.H{"short_url": ShortUrl})
 		return
 	}

@@ -22,5 +22,5 @@ func RedirectURL(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"error": "链接不存在"})
 		return
 	}
-	c.Redirect(http.StatusMovedPermanently, origin)
+	c.Redirect(http.StatusMovedPermanently, origin) //重定向,301
 }
