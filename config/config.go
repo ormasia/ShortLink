@@ -2,14 +2,18 @@ package config
 
 import (
 	"fmt"
+	"shortLink/logger"
 
 	"github.com/spf13/viper"
+	"go.uber.org/zap"
 )
 
 type Config struct {
-	MySQL MySQLConfig
-	Redis RedisConfig
-	App   AppConfig
+	MySQL  MySQLConfig
+	Redis  RedisConfig
+	Kafka  KafkaConfig
+	Logger LoggerConfig
+	App    AppConfig
 }
 
 type MySQLConfig struct {
@@ -36,6 +40,17 @@ type RedisConfig struct {
 	WriteTimeout int
 }
 
+type KafkaConfig struct {
+	Host    string
+	Port    int
+	Brokers []string
+	Topic   string
+}
+
+type LoggerConfig struct {
+	Level string
+}
+
 type AppConfig struct {
 	Host      string
 	Port      int
@@ -52,12 +67,14 @@ func InitConfig(configPath string) error {
 
 	// 读取配置文件
 	if err := viper.ReadInConfig(); err != nil {
-		return fmt.Errorf("读取配置文件失败: %v", err)
+		logger.Log.Error("读取配置文件失败", zap.Error(err))
+		return err
 	}
 
 	// 解析配置文件
 	if err := viper.Unmarshal(&GlobalConfig); err != nil {
-		return fmt.Errorf("解析配置文件失败: %v", err)
+		logger.Log.Error("解析配置文件失败", zap.Error(err))
+		return err
 	}
 
 	return nil

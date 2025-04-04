@@ -110,3 +110,17 @@ Redis缓存：提升热点链接访问性能。
 
 易维护扩展：微服务设计便于服务的快速迭代和水平扩展。
 
+
+### 创建topic
+``` bash
+kafka-topics.sh --create \
+  --bootstrap-server localhost:9092 \
+  --replication-factor 1 \
+  --partitions 3 \
+  --topic shortlink-log
+```
+``` docker
+docker-compose.yml
+environment:
+  KAFKA_CREATE_TOPICS: "shortlink-log:3:1"
+```

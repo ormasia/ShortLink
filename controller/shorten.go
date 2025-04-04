@@ -1,12 +1,13 @@
 package controller
 
 import (
-	"fmt"
 	"net/http"
+	"shortLink/logger"
 	"shortLink/model"
 	"shortLink/service"
 
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 )
 
 type ShortenRequest struct {
@@ -22,6 +23,7 @@ type ShortenRequest struct {
 func ShortenURL(c *gin.Context) {
 	var req ShortenRequest
 	if err := c.BindJSON(&req); err != nil {
+		logger.Log.Error("参数错误", zap.Error(err))
 		c.JSON(http.StatusBadRequest, gin.H{"error": "参数错误"})
 		return
 	}
@@ -34,7 +36,7 @@ func ShortenURL(c *gin.Context) {
 	// }
 	ShortUrlDB := model.IsOriginalURLExist(req.URL)
 	if ShortUrlDB != "" {
-		fmt.Println("DB yes")
+		logger.Log.Info("DB yes")
 		c.JSON(http.StatusOK, gin.H{"short_url": ShortUrlDB})
 		return
 	}
@@ -42,6 +44,7 @@ func ShortenURL(c *gin.Context) {
 	//不存在，生成短链接
 	shortUrl, err := service.Shorten(req.URL)
 	if err != nil {
+		logger.Log.Error("生成短链接失败", zap.Error(err))
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

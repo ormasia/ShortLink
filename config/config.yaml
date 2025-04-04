@@ -22,6 +22,18 @@ redis:
   read_timeout: 3
   write_timeout: 3
 
+# Kafka配置
+kafka:
+  host: "localhost"
+  port: 9092
+  brokers:
+    - "localhost:9092"
+  topic: "shortlink-log"
+
+# 日志配置
+logger:
+  level: "info"
+
 # 应用配置
 app:
   host: "localhost"
