@@ -39,5 +39,7 @@ app:
   host: "0.0.0.0"
   port: 8080
   mode: "debug"  # debug, release, test
-  jwt_secret: "your_jwt_secret"
-  jwt_expire: 24  # 小时
+  jwtsecret: "your_jwt_secret"
+  jwtexpire: 24  # 小时
+  base62length: 6 # 短链接长度
+  max_retries: 3 # 生成最大重试次数

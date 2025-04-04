@@ -8,6 +8,8 @@ import (
 	"go.uber.org/zap"
 )
 
+//注意，viper识别参数有问题，如果有'_','.'会出现解析不到的情况，使用`mapstructure:"yaml.name"`绑定
+
 type Config struct {
 	MySQL  MySQLConfig
 	Redis  RedisConfig
@@ -52,15 +54,23 @@ type LoggerConfig struct {
 }
 
 type AppConfig struct {
-	Host      string
-	Port      int
-	Mode      string
-	JWTSecret string
-	JWTExpire int
+	Host         string
+	Port         int
+	Mode         string
+	JWTSecret    string
+	JWTExpire    int
+	Base62Length int
+	MaxRetries   int `mapstructure:"max_retries"`
 }
 
 var GlobalConfig Config
 
+// InitConfig 初始化配置
+// 参数：
+//   - configPath: 配置文件路径
+//
+// 返回：
+//   - error: 错误信息
 func InitConfig(configPath string) error {
 	viper.SetConfigFile(configPath)
 	viper.SetConfigType("yaml")

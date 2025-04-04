@@ -3,6 +3,7 @@ package service
 import (
 	"errors"
 	"shortLink/cache"
+	"shortLink/config"
 	"shortLink/model"
 	"shortLink/pkg"
 )
@@ -20,13 +21,19 @@ func Shorten(url string) (string, error) {
 		return "", errors.New("链接非法")
 	}
 
-	// 生成唯一ID
-	id, err := model.GenerateID()
+	// // 生成唯一ID
+	// id, err := model.GenerateID()
+	// if err != nil {
+	// 	return "", err
+	// }
+	// // 将ID转换为短链接key
+	// shortKey := pkg.EncodeID(id)
+
+	// 生成短链接
+	shortKey, err := pkg.GenerateShortURL(config.GlobalConfig.App.Base62Length, nil)
 	if err != nil {
 		return "", err
 	}
-	// 将ID转换为短链接key
-	shortKey := pkg.EncodeID(id)
 
 	// 将短链接加入布隆过滤器,用于后续判断短链接是否存在
 	cache.AddToBloom(shortKey)
