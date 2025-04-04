@@ -28,6 +28,9 @@ func Shorten(url string) (string, error) {
 	// 将ID转换为短链接key
 	shortKey := pkg.EncodeID(id)
 
+	// 将短链接加入布隆过滤器,用于后续判断短链接是否存在
+	cache.AddToBloom(shortKey)
+
 	// 将短链接与原始URL的映射关系保存到数据库
 	err = model.SaveURLMapping(shortKey, url)
 	if err != nil {

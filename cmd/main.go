@@ -28,7 +28,9 @@ func main() {
 	// TODO:使用函数直接配置
 	cache.InitRedis(config.GlobalConfig.Redis.Host, config.GlobalConfig.Redis.Password, config.GlobalConfig.Redis.Port, config.GlobalConfig.Redis.DB)
 	//初始化布隆过滤器
-	cache.InitBloom(2, 2.2)
+	cache.InitBloom(100000, 0.01)
+	// 预热布隆过滤器
+	cache.WarmUpBloomFromDB()
 
 	// 4. 设置Gin模式
 	gin.SetMode(config.GlobalConfig.App.Mode)

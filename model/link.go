@@ -69,3 +69,10 @@ func IsOriginalURLExist(originalURL string) string {
 	db.First(&mapping, "original_url = ?", originalURL)
 	return mapping.ShortURL
 }
+
+func GetAllShortUrls() []string {
+	var urls []string
+	// 获取所有短链接
+	db.Model(&URLMapping{}).Pluck("short_url", &urls) // pluck是gorm的函数，用于获取单个字段的所有数据
+	return urls
+}

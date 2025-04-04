@@ -1,6 +1,7 @@
 package cache
 
 import (
+	"shortLink/model"
 	"sync"
 
 	"github.com/bits-and-blooms/bloom/v3"
@@ -27,9 +28,19 @@ func AddToBloom(data string) {
 }
 
 // 判断数据是否在布隆过滤器中
+// Test returns true if the data is in the BloomFilter, false otherwise.
+// If true, the result might be a false positive.
+// If false, the data is definitely not in the set.
 func MightContain(data string) bool {
 	if bloomFilter == nil {
 		return false
 	}
 	return bloomFilter.Test([]byte(data))
+}
+
+func WarmUpBloomFromDB() {
+	urls := model.GetAllShortUrls()
+	for _, short := range urls {
+		AddToBloom(short)
+	}
 }
