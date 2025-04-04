@@ -3,11 +3,8 @@ package service
 import (
 	"shortLink/cache"
 	"shortLink/model"
-
-	"golang.org/x/sync/singleflight"
+	"shortLink/pkg"
 )
-
-var g singleflight.Group
 
 // Resolve 解析短链接
 // 参数：
@@ -22,7 +19,7 @@ func Resolve(short string) (string, error) {
 		return url, nil
 	}
 	// 使用 singleflight 防止缓存击穿
-	v, err, _ := g.Do(short, func() (any, error) {
+	v, err, _ := pkg.Group.Do(short, func() (any, error) {
 		return model.GetOriginalURL(short)
 	})
 	if err != nil {

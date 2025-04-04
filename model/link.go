@@ -64,6 +64,7 @@ func GetOriginalURL(shortURL string) (string, error) {
 //   - string: 短链接
 //   - error: 错误信息，如果查询成功则为nil
 func IsOriginalURLExist(originalURL string) string {
+
 	var mapping URLMapping
 	db.First(&mapping, "original_url = ?", originalURL)
 	return mapping.ShortURL

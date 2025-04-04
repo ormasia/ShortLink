@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"fmt"
 	"net/http"
 	"shortLink/model"
 	"shortLink/service"
@@ -24,10 +25,17 @@ func ShortenURL(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "参数错误"})
 		return
 	}
-	//判断是否存在
-	ShortUrl := model.IsOriginalURLExist(req.URL)
-	if ShortUrl != "" {
-		c.JSON(http.StatusOK, gin.H{"short_url": ShortUrl})
+	//判断是否存在 有必要放到redis中吗？
+	// shorturlCache := cache.Get(req.URL)
+	// if shorturlCache != "" {
+	// 	fmt.Println("cache yes")
+	// 	c.JSON(http.StatusOK, gin.H{"short_url": shorturlCache})
+	// 	return
+	// }
+	ShortUrlDB := model.IsOriginalURLExist(req.URL)
+	if ShortUrlDB != "" {
+		fmt.Println("DB yes")
+		c.JSON(http.StatusOK, gin.H{"short_url": ShortUrlDB})
 		return
 	}
 
