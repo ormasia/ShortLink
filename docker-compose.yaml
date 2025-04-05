@@ -18,12 +18,12 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
-    healthcheck:
-      test: ["CMD", "zkServer.sh", "status"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
+    # healthcheck: 健康检查配置有问题
+    #   test: ["CMD", "zkServer.sh", "status"]
+    #   interval: 30s
+    #   timeout: 10s
+    #   retries: 3
+    #   start_period: 40s
 
   kafka:
     image: confluentinc/cp-kafka:7.5.0
@@ -32,8 +32,8 @@ services:
     ports:
       - "9092:9092"
     depends_on:
-      zookeeper:
-        condition: service_healthy
+      - zookeeper
+        # condition: service_healthy
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
@@ -73,6 +73,33 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+
+  nacos:
+    image: nacos/nacos-server:v2.2.3
+    container_name: nacos
+    hostname: nacos
+    environment:
+      MODE: standalone
+      NACOS_AUTH_ENABLE: "false"
+      # NACOS_SERVER_IP: 0.0.0.0    # ✅ 监听所有地址
+    ports:
+      - "8848:8848"   # Nacos 控制台
+      - "9848:9848"  # 必须要把这两个端口暴露出来
+      - "9849:9849"
+    networks:
+      - shortlink_net
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8848/nacos"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
 networks:
   shortlink_net:

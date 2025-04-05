@@ -18,9 +18,14 @@ import (
 
 func main() {
 
-	// 初始化配置
-	if err := config.InitConfig("config/config.yaml"); err != nil {
-		logger.Log.Error("config init failed", zap.Error(err))
+	// // 初始化配置
+	// if err := config.InitConfig("config/config.yaml"); err != nil {
+	// 	fmt.Println("config init failed", err)
+	// }
+
+	// nacos初始化配置
+	if err := config.InitConfigFromNacos(); err != nil {
+		fmt.Println("config init failed", err)
 	}
 	// 初始化日志
 	logger.InitLogger(config.GlobalConfig.Kafka.Topic, zapcore.InfoLevel)

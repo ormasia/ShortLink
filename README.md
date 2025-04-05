@@ -124,3 +124,9 @@ docker-compose.yml
 environment:
   KAFKA_CREATE_TOPICS: "shortlink-log:3:1"
 ```
+
+### nacos启动问题
+  必须要把grpc的端口暴露出来
+  主要原因是因为调用 configClient.GetConfig方法的时候会访问grpc服务，nacos2添加了grpc通信方式，所以需要把grpc的端口也打开
+
+  docker启动的时候记得把9848和9849暴露出来，也就是把grpc打开
