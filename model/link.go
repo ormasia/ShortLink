@@ -9,9 +9,15 @@ import (
 
 var db *gorm.DB
 
+func GetDB() *gorm.DB {
+	return db
+}
+
 func InitDB(dataSource string) error {
 	var err error
 	db, err = gorm.Open(mysql.Open(dataSource), &gorm.Config{})
+	// 自动建表
+	_ = db.AutoMigrate(&User{})
 	return err
 }
 
