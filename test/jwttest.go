@@ -2,11 +2,9 @@ package main
 
 import (
 	"fmt"
-	"shortLink/controller"
 	"shortLink/pkg/jwt"
+	"shortLink/router"
 	"time"
-
-	"github.com/gin-gonic/gin"
 )
 
 func jwtTest() {
@@ -23,10 +21,7 @@ func jwtTest() {
 }
 
 func Logintest() {
-	gin.SetMode(gin.ReleaseMode)
-	r := gin.Default()
-	r.POST("/register", controller.Register)
-	r.POST("/login", controller.Login)
+	r := router.InitRoutesWithAuth()
 	r.Run(":8080")
 }
 
