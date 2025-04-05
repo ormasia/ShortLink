@@ -19,7 +19,7 @@ func InitRoutesWithAuth() *gin.Engine {
 
 	// ✅ 启用跨域支持（允许前端访问）
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:3000"}, // 你的前端地址
+		AllowOrigins:     []string{"*"}, // 你的前端地址
 		AllowMethods:     []string{"GET", "POST", "OPTIONS"},
 		AllowHeaders:     []string{"Authorization", "Content-Type"},
 		AllowCredentials: true,
