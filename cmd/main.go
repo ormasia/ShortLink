@@ -56,8 +56,9 @@ func main() {
 	// 设置Gin模式
 	gin.SetMode(config.GlobalConfig.App.Mode)
 	// 初始化路由
-	r := gin.Default()
-	router.InitRoutes(r)
+	// r := gin.Default()
+	// router.InitRoutes(r)
+	r := router.InitRoutesWithAuth()
 
 	// 获取配置文件中的主机和端口
 	host, port := config.GlobalConfig.App.GetHost()

@@ -1,8 +1,10 @@
 package controller
 
 import (
+	"shortLink/cache"
 	"shortLink/model"
 	"shortLink/pkg/jwt"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -65,6 +67,7 @@ func Login(c *gin.Context) {
 	}
 
 	token, _ := jwt.GenerateToken(user.ID, user.Role, 24*time.Hour)
+	cache.Set(token, strconv.FormatUint(uint64(user.ID), 10))
 	c.JSON(200, gin.H{"token": token, "user": gin.H{
 		"id":       user.ID,
 		"username": user.Username,

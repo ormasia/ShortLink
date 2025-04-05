@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"strings"
 
+	"shortLink/cache"
 	"shortLink/pkg/jwt"
 
 	"github.com/gin-gonic/gin"
@@ -25,7 +26,15 @@ func AuthMiddleware() gin.HandlerFunc {
 		// 解析 token
 		claims, err := jwt.ParseToken(tokenStr)
 		if err != nil {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "无效或过期的 Token"})
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "解析-无效或过期的 Token"})
+			c.Abort()
+			return
+		}
+
+		// 校验 token 是否在 Redis 中存在（即是否有效）
+		cachedToken := cache.Get(tokenStr)
+		if cachedToken == "" {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "校验-无效或过期的 Token"})
 			c.Abort()
 			return
 		}
