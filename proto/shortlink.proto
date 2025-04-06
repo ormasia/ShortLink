@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+package shortlink;
+
+option go_package = "./proto/shortlinkpb";
+
+// 请求生成短链接
+message ShortenRequest {
+  string original_url = 1;
+}
+
+message ShortenResponse {
+  string short_url = 1;
+}
+
+// 请求解析短链接
+message ResolveRequest {
+  string short_url = 1;
+}
+
+message ResolveResponse {
+  string original_url = 1;
+}
+
+service ShortlinkService {
+  // 长链接 → 短链接
+  rpc ShortenURL(ShortenRequest) returns (ShortenResponse);
+
+  // 短链接 → 长链接
+  rpc Redierect(ResolveRequest) returns (ResolveResponse);
+}  
