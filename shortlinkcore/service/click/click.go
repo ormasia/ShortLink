@@ -14,7 +14,7 @@ func IncrClickCount(shortUrl, originalUrl string) {
 	// 计数（用于单个点击展示）「记录某个短链总共被点击了多少次」，以便展示或查询，不用于排行。也可以不记录；
 	cache.GetRedis().Incr(ctx, fmt.Sprintf("click:%s-%s", shortUrl, originalUrl))
 
-	// ✅ 更新排行榜（ZSet 自增）
+	// ✅ 更新排行榜（ZSet 自增）ZIncrBy 原子操作
 	cache.GetRedis().ZIncrBy(ctx, "shortlink:rank", 1, fmt.Sprintf("%s-%s", shortUrl, originalUrl))
 
 	// // 设置点击量 key 的过期（排行榜不需要）

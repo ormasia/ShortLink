@@ -130,3 +130,7 @@ environment:
   主要原因是因为调用 configClient.GetConfig方法的时候会访问grpc服务，nacos2添加了grpc通信方式，所以需要把grpc的端口也打开
 
   docker启动的时候记得把9848和9849暴露出来，也就是把grpc打开
+
+  预生成短链池 + 异步批量写入数据库，减少实时生成压力
+
+  使用 Redis 缓存热点长-短映射，降低数据库查询频率

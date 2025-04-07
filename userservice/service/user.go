@@ -3,11 +3,11 @@ package service
 import (
 	"context"
 	"log"
-	"shortLink/pkg/jwt"
 	"shortLink/proto/userpb"
 	"shortLink/userservice/cache"
 	"shortLink/userservice/logger"
 	"shortLink/userservice/model"
+	"shortLink/userservice/pkg/jwt"
 	"strconv"
 	"time"
 

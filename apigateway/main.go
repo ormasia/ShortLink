@@ -8,9 +8,9 @@ import (
 	"time"
 
 	"shortLink/apigateway/cache"
+	"shortLink/apigateway/config"
 	"shortLink/apigateway/middleware"
 	"shortLink/apigateway/model"
-	"shortLink/config"
 	pbShortlink "shortLink/proto/shortlinkpb"
 	pb "shortLink/proto/userpb"
 
