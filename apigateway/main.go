@@ -111,6 +111,22 @@ func main() {
 			}
 			c.JSON(http.StatusOK, gin.H{"shortlink": res.ShortUrl})
 		})
+
+		auth.GET("/api/shorten/top", func(c *gin.Context) {
+			req := &pbShortlink.TopRequest{Count: 10}
+
+			// 超时2秒就返回
+			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+			defer cancel()
+
+			resp, err := clientShortlink.GetTopLinks(ctx, req)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "获取排行榜失败"})
+				return
+			}
+
+			c.JSON(http.StatusOK, gin.H{"top": resp.Top})
+		})
 	}
 	// 跳转
 	r.GET("/:short_url", func(c *gin.Context) {

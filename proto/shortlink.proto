@@ -22,10 +22,26 @@ message ResolveResponse {
   string original_url = 1;
 }
 
+message TopRequest {
+  int64 count = 1;
+}
+
+message ShortLinkItem {
+  string short_url = 1;
+  double clicks = 2;
+}
+
+message TopResponse {
+  repeated ShortLinkItem top = 1;
+}
+
 service ShortlinkService {
   // 长链接 → 短链接
   rpc ShortenURL(ShortenRequest) returns (ShortenResponse);
 
   // 短链接 → 长链接
   rpc Redierect(ResolveRequest) returns (ResolveResponse);
+
+  // 获取前N条热点link
+  rpc GetTopLinks (TopRequest) returns (TopResponse);
 }  

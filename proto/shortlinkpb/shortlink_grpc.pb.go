@@ -19,8 +19,9 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	ShortlinkService_ShortenURL_FullMethodName = "/shortlink.ShortlinkService/ShortenURL"
-	ShortlinkService_Redierect_FullMethodName  = "/shortlink.ShortlinkService/Redierect"
+	ShortlinkService_ShortenURL_FullMethodName  = "/shortlink.ShortlinkService/ShortenURL"
+	ShortlinkService_Redierect_FullMethodName   = "/shortlink.ShortlinkService/Redierect"
+	ShortlinkService_GetTopLinks_FullMethodName = "/shortlink.ShortlinkService/GetTopLinks"
 )
 
 // ShortlinkServiceClient is the client API for ShortlinkService service.
@@ -31,6 +32,8 @@ type ShortlinkServiceClient interface {
 	ShortenURL(ctx context.Context, in *ShortenRequest, opts ...grpc.CallOption) (*ShortenResponse, error)
 	// 短链接 → 长链接
 	Redierect(ctx context.Context, in *ResolveRequest, opts ...grpc.CallOption) (*ResolveResponse, error)
+	// 获取前N条热点link
+	GetTopLinks(ctx context.Context, in *TopRequest, opts ...grpc.CallOption) (*TopResponse, error)
 }
 
 type shortlinkServiceClient struct {
@@ -61,6 +64,16 @@ func (c *shortlinkServiceClient) Redierect(ctx context.Context, in *ResolveReque
 	return out, nil
 }
 
+func (c *shortlinkServiceClient) GetTopLinks(ctx context.Context, in *TopRequest, opts ...grpc.CallOption) (*TopResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(TopResponse)
+	err := c.cc.Invoke(ctx, ShortlinkService_GetTopLinks_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ShortlinkServiceServer is the server API for ShortlinkService service.
 // All implementations must embed UnimplementedShortlinkServiceServer
 // for forward compatibility.
@@ -69,6 +82,8 @@ type ShortlinkServiceServer interface {
 	ShortenURL(context.Context, *ShortenRequest) (*ShortenResponse, error)
 	// 短链接 → 长链接
 	Redierect(context.Context, *ResolveRequest) (*ResolveResponse, error)
+	// 获取前N条热点link
+	GetTopLinks(context.Context, *TopRequest) (*TopResponse, error)
 	mustEmbedUnimplementedShortlinkServiceServer()
 }
 
@@ -84,6 +99,9 @@ func (UnimplementedShortlinkServiceServer) ShortenURL(context.Context, *ShortenR
 }
 func (UnimplementedShortlinkServiceServer) Redierect(context.Context, *ResolveRequest) (*ResolveResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Redierect not implemented")
+}
+func (UnimplementedShortlinkServiceServer) GetTopLinks(context.Context, *TopRequest) (*TopResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetTopLinks not implemented")
 }
 func (UnimplementedShortlinkServiceServer) mustEmbedUnimplementedShortlinkServiceServer() {}
 func (UnimplementedShortlinkServiceServer) testEmbeddedByValue()                          {}
@@ -142,6 +160,24 @@ func _ShortlinkService_Redierect_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ShortlinkService_GetTopLinks_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(TopRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ShortlinkServiceServer).GetTopLinks(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ShortlinkService_GetTopLinks_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ShortlinkServiceServer).GetTopLinks(ctx, req.(*TopRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ShortlinkService_ServiceDesc is the grpc.ServiceDesc for ShortlinkService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -156,6 +192,10 @@ var ShortlinkService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Redierect",
 			Handler:    _ShortlinkService_Redierect_Handler,
+		},
+		{
+			MethodName: "GetTopLinks",
+			Handler:    _ShortlinkService_GetTopLinks_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -23,5 +23,5 @@ func InitLogger(topic string, level zapcore.Level) {
 		Topic: topic,
 	}
 
-	Log = zap.New(zapcore.NewTee(consoleCore, kafkaCore))
+	Log = zap.New(zapcore.NewTee(consoleCore, kafkaCore), zap.AddCaller())
 }

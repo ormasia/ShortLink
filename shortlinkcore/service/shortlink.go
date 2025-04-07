@@ -9,6 +9,7 @@ import (
 	"shortLink/shortlinkcore/config"
 	"shortLink/shortlinkcore/model"
 	"shortLink/shortlinkcore/pkg"
+	"shortLink/shortlinkcore/service/click"
 )
 
 type ShortlinkService struct {
@@ -38,7 +39,26 @@ func (s *ShortlinkService) Redierect(ctx context.Context, req *shortlinkpb.Resol
 		return nil, fmt.Errorf("短链接不存在: %w", err)
 	}
 
+	// 更新点击量
+	go click.IncrClickCount(req.ShortUrl, originalURL)
+
 	return &shortlinkpb.ResolveResponse{OriginalUrl: originalURL}, nil
+}
+
+func (s *ShortlinkService) GetTopLinks(ctx context.Context, req *shortlinkpb.TopRequest) (*shortlinkpb.TopResponse, error) {
+	rankList, err := click.GetTopShortLinks(req.Count)
+	if err != nil {
+		return nil, err
+	}
+
+	items := make([]*shortlinkpb.ShortLinkItem, 0)
+	for _, r := range rankList {
+		items = append(items, &shortlinkpb.ShortLinkItem{
+			ShortUrl: r.ShortUrl,
+			Clicks:   r.Clicks,
+		})
+	}
+	return &shortlinkpb.TopResponse{Top: items}, nil
 }
 
 // Shorten 将长URL转换为短链接
