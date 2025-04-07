@@ -6,10 +6,12 @@ import (
 	"shortLink/pkg/jwt"
 	"shortLink/proto/userpb"
 	"shortLink/userservice/cache"
+	"shortLink/userservice/logger"
 	"shortLink/userservice/model"
 	"strconv"
 	"time"
 
+	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
@@ -66,6 +68,13 @@ func (s *UserService) Login(ctx context.Context, req *userpb.LoginRequest) (*use
 	token, _ := jwt.GenerateToken(user.ID, user.Role, 24*time.Hour)
 	// 写入redis
 	cache.Set(token, strconv.FormatUint(uint64(user.ID), 10))
+	logger.Log.Info("用户登录成功",
+		zap.String("uid", strconv.FormatUint(uint64(user.ID), 10)),
+		zap.String("username", user.Username),
+		zap.String("nickname", user.Nickname),
+		zap.String("email", user.Email),
+		zap.String("role", user.Role),
+	)
 	return &userpb.LoginResponse{
 		Token: token,
 		User: &userpb.UserInfo{

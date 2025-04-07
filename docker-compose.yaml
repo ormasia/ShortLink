@@ -1,4 +1,4 @@
-version: '3.7'
+# version: '3.7'
 
 services:
   zookeeper:
@@ -37,8 +37,10 @@ services:
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,DOCKER:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,DOCKER://kafka1:9093
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,DOCKER://0.0.0.0:9093
+      KAFKA_INTER_BROKER_LISTENER_NAME: DOCKER
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       # KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
       KAFKA_CREATE_TOPICS: "shortlink-log:3:1"
@@ -100,6 +102,55 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.1
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms1g -Xmx1g"  # 设置 JVM 内存
+    ports:
+      - "9200:9200"  # Elasticsearch HTTP 接口
+      - "9300:9300"  # 集群通讯（暂不使用）
+    networks:
+      - shortlink_net
+    restart: unless-stopped
+    volumes:
+      - esdata:/usr/share/elasticsearch/data
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.11.1
+    container_name: kibana
+    depends_on:
+      - elasticsearch
+    ports:
+      - "5601:5601"  # Kibana Web UI
+    environment:
+      ELASTICSEARCH_HOSTS: "http://elasticsearch:9200"
+    networks:
+      - shortlink_net
+    restart: unless-stopped
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.11.1
+    container_name: logstash
+    depends_on:
+      - elasticsearch
+    volumes:
+      - ./logservice/logstash/pipeline:/usr/share/logstash/pipeline  # 放置 logstash.conf
+    ports:
+      - "5044:5044"    # Logstash beats 输入端口（如 Filebeat）
+      - "9600:9600"    # Logstash HTTP API
+    networks:
+      - shortlink_net
+    environment:
+      LS_JAVA_OPTS: "-Xms512m -Xmx512m"
+    restart: unless-stopped
+
+volumes:
+  esdata:
 
 networks:
   shortlink_net:
