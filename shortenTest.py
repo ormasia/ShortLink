@@ -35,7 +35,7 @@ def send_request(long_url):
 
 start_time = time.time()
 # 使用线程池并发请求
-with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+with concurrent.futures.ThreadPoolExecutor(max_workers=100) as executor:
     futures = [executor.submit(send_request, url) for url in urls]
     for future in concurrent.futures.as_completed(futures):
         results.append(future.result())
