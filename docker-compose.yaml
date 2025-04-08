@@ -149,6 +149,60 @@ services:
       LS_JAVA_OPTS: "-Xms512m -Xmx512m"
     restart: unless-stopped
 
+  mysql:
+    container_name: mysql1
+    image: mysql:${MYSQL_VERSION}
+    restart: always
+    ports:
+      - 3307:3306
+    environment:
+      TZ: Asia/Shanghai
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: online_learning_platform
+    networks:
+      - shortlink_net
+    volumes:
+      - ${MYSQL_DIR}/data:/var/lib/mysql
+      - ${MYSQL_DIR}/conf:/etc/mysql/conf.d/
+      - ${MYSQL_DIR}/logs:/logs
+    command:
+      --default-authentication-plugin=mysql_native_password
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_general_ci
+      --explicit_defaults_for_timestamp=true
+      --lower_case_table_names=1
+
+  redis:
+    container_name: redis1
+    image: redis:${REDIS_VERSION}
+    restart: always
+    networks:
+      - shortlink_net
+    volumes:
+      - ${REDIS_DIR}/data:/data
+      - ${REDIS_DIR}/conf/redis.conf:/etc/redis/redis.conf
+    ports:
+      - ${REDIS_PORT}:6379
+    command: redis-server /etc/redis/redis.conf
+
+  etcd:
+    container_name: etcd1
+    image: bitnami/etcd:${ETCD_VERSION}
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+    environment:
+      - ALLOW_NONE_AUTHENTICATION=yes
+    privileged: true
+    networks:
+      - shortlink_net
+    volumes:
+      - ${ETCD_DIR}/data:/bitnami/etcd/data
+    ports:
+      - ${ETCD_PORT}:2379
+      - 2380:2380
+
 volumes:
   esdata:
 

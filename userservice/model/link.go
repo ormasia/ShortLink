@@ -1,6 +1,8 @@
 package model
 
 import (
+	"time"
+
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 
@@ -24,6 +26,8 @@ func InitDB(dataSource string) error {
 type URLMapping struct {
 	ShortURL    string `gorm:"primaryKey"`
 	OriginalURL string `gorm:"not null"`
+	UserID      string
+	CreateTime  time.Time `gorm:"autoCreateTime"`
 }
 
 func (URLMapping) TableName() string {
