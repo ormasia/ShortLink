@@ -3,6 +3,7 @@ package pkg
 import (
 	"crypto/rand"
 	"encoding/binary"
+	"errors"
 	"math"
 	"time"
 
@@ -59,7 +60,7 @@ func GenerateShortURL(length int, checkExists func(string) bool) (string, error)
 		}
 	}
 	// 不返回错误，增加纠错机制：在db中查询是否存在，如果存在则重新生成
-	return "shortURL", nil
+	return "", errors.New("生成短链接失败，请重试")
 }
 
 // EncodeID 将ID转换为短链接key

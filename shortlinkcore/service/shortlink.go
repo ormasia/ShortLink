@@ -120,8 +120,6 @@ func Shorten(longUrl string) (string, error) {
 		return "", errors.New("链接非法")
 	}
 
-	// 2. 先判断布隆过滤器中是否已存在（降低缓存穿透概率）
-
 	// 3. 分布式锁（对 URL 做哈希防止 key 过长）防止并发过程中生成重复短链
 	urlHash := fmt.Sprintf("%x", sha256.Sum256([]byte(longUrl)))
 	lockKey := "lock:shorten:" + urlHash
@@ -150,7 +148,7 @@ func Shorten(longUrl string) (string, error) {
 	}
 
 	// 5. 生成短链 Key（Base62）
-	shortKey, err := pkg.GenerateShortURL(config.GlobalConfig.App.Base62Length, nil)
+	shortKey, err := pkg.GenerateShortURL(config.GlobalConfig.App.Base62Length, cache.MightContain)
 	if err != nil {
 		// logger.Log.Error("短链生成失败", zap.Error(err))
 		return "", errors.New("生成失败")
@@ -194,8 +192,8 @@ func Resolve(short string) (string, error) {
 	//有三个方案：
 	// 1. 使用redis持久化布隆过滤器，需要使用redisbloom
 	// 2. 使用文件持久化布隆过滤器，需要使用bloom
-
 	// 3. 程序每次启动时全量从 DB 预热布隆过滤器
+
 	if !cache.MightContain(short) {
 		fmt.Println("布隆过滤器不存在该值")
 		return "", errors.New("数据不存在")
