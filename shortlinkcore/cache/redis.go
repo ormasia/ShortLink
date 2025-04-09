@@ -5,7 +5,10 @@ import (
 	"fmt"
 	"time"
 
+	"shortLink/shortlinkcore/logger"
+
 	"github.com/go-redis/redis/v8"
+	"go.uber.org/zap"
 )
 
 var (
@@ -20,11 +23,6 @@ func InitRedis(addr, password string, port, db int) {
 		Password: password,
 		DB:       db,
 	})
-	// 测试连接
-	if err := rdb.Ping(ctx).Err(); err != nil {
-		fmt.Printf("Redis连接失败: %v", err)
-	}
-	fmt.Println("Redis连接成功")
 }
 
 // 获取redis
@@ -34,25 +32,37 @@ func GetRedis() *redis.Client {
 
 func Set(key, value string) {
 	if rdb == nil {
-		fmt.Println("Redis未初始化")
+		logger.Log.Warn("Redis未初始化")
 		return
 	}
 	err := rdb.Set(ctx, key, value, time.Hour*24).Err()
 	if err != nil {
-		fmt.Printf("设置缓存失败: %v", err)
+		logger.Log.Error("设置缓存失败", zap.Error(err))
 	}
-	fmt.Println("设置缓存成功")
+	logger.Log.Info("设置缓存成功")
 }
 
 func Get(key string) string {
 	if rdb == nil {
-		fmt.Println("Redis未初始化")
+		logger.Log.Warn("Redis未初始化")
 		return ""
 	}
 	val, err := rdb.Get(ctx, key).Result()
 	if err != nil {
+		logger.Log.Debug("获取缓存失败", zap.Error(err), zap.String("key", key))
 		return ""
 	}
-	fmt.Println("获取缓存成功", val)
+	logger.Log.Info("获取缓存成功", zap.String("value", val))
 	return val
+}
+
+func Del(key string) {
+	if rdb == nil {
+		logger.Log.Warn("Redis未初始化")
+		return
+	}
+	err := rdb.Del(ctx, key).Err()
+	if err != nil {
+		logger.Log.Error("删除缓存失败", zap.Error(err))
+	}
 }

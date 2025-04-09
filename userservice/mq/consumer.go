@@ -18,17 +18,6 @@ func (LogConsumer) ConsumeClaim(session sarama.ConsumerGroupSession, claim saram
 		log.Printf(" 收到日志: [%s] %s", msg.Topic, string(msg.Value))
 		session.MarkMessage(msg, "")
 	}
-	// fmt.Println("========= [Kafka日志消费] =========")
-	// for msg := range claim.Messages() {
-	// 	// ✅ 这里就是你该加的地方！
-	// 	fmt.Println("========= [Kafka日志消费] =========")
-	// 	fmt.Printf("Topic: %s\n", msg.Topic)
-	// 	fmt.Printf("Value: %s\n", string(msg.Value))
-	// 	fmt.Println("===================================")
-
-	// 	// ✅ 告诉 Kafka 消费者“这条消息我处理完了”
-	// 	session.MarkMessage(msg, "")
-	// }
 	return nil
 }
 

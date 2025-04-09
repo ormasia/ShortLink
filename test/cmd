@@ -1,2 +1,2 @@
 New-Item -ItemType Directory -Force -Path .\test
-1..500 | ForEach-Object { "https://example.com/page$_" } | Set-Content -Path .\test\urls.txt
+1..5000 | ForEach-Object { "https://example.com/page$_" } | Set-Content -Path .\test\urls5000.txt

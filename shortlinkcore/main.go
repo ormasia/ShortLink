@@ -6,9 +6,12 @@ import (
 	"shortLink/proto/shortlinkpb"
 	"shortLink/shortlinkcore/cache"
 	"shortLink/shortlinkcore/config"
+	"shortLink/shortlinkcore/logger"
 	"shortLink/shortlinkcore/model"
+	"shortLink/shortlinkcore/mq"
 	"shortLink/shortlinkcore/service"
 
+	"go.uber.org/zap/zapcore"
 	"google.golang.org/grpc"
 )
 
@@ -18,6 +21,13 @@ func main() {
 	if err != nil {
 		log.Fatalf("❌ 初始化配置失败: %v", err)
 	}
+
+	// 初始化mq
+	mq.InitKafka(config.GlobalConfig.Kafka.Brokers)
+
+	// 初始化日志
+	logger.InitLogger(config.GlobalConfig.Kafka.Topic, zapcore.InfoLevel)
+
 	// 初始化数据库
 	model.InitDB(config.GlobalConfig.MySQL.GetDSN())
 

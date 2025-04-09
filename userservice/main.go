@@ -27,7 +27,7 @@ func main() {
 	// 初始化mq
 	mq.InitKafka(config.GlobalConfig.Kafka.Brokers)
 
-	// 初始化日志
+	// 初始化日志 TODO热更新logLevel
 	logger.InitLogger(config.GlobalConfig.Kafka.Topic, zapcore.InfoLevel)
 
 	// 初始化数据库
@@ -43,7 +43,6 @@ func main() {
 	if err != nil {
 		logger.Log.Error("failed to listen", zap.Error(err))
 	}
-	logger.Log.Info("✅ user-service 启动成功，监听端口 :8081")
 	if err := grpcServer.Serve(lis); err != nil {
 		logger.Log.Error("failed to serve", zap.Error(err))
 	}

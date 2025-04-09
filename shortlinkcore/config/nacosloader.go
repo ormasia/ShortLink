@@ -14,8 +14,8 @@ func InitConfigFromNacos() error {
 	serverConfigs := []constant.ServerConfig{
 		*constant.NewServerConfig("127.0.0.1", 8848), // Nacos 地址
 	}
-	// 打印连接信息
-	fmt.Printf("Nacos 服务器配置: %+v\n", serverConfigs)
+	// // 打印连接信息
+	// fmt.Printf("Nacos 服务器配置: %+v\n", serverConfigs)
 
 	// 创建 Nacos 客户端配置
 	clientConfig := *constant.NewClientConfig(

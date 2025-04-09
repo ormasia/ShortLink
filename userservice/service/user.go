@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"log"
 	"shortLink/proto/userpb"
 	"shortLink/userservice/cache"
 	"shortLink/userservice/logger"
@@ -21,35 +20,53 @@ type UserService struct {
 }
 
 func (s *UserService) Register(ctx context.Context, req *userpb.RegisterRequest) (*userpb.RegisterResponse, error) {
-	log.Printf("📨 注册请求: %v", req.Username)
 	// "TODO": 写入数据库、校验重复
 	var user model.User
+
 	if err := model.GetDB().Where("username = ?", req.Username).First(&user).Error; err != gorm.ErrRecordNotFound {
+		logger.Log.Warn("用户注册失败：用户名已存在",
+			zap.String("username", req.Username),
+			zap.String("email", req.Email),
+		)
 		return &userpb.RegisterResponse{Message: "用户名已存在"}, err
 	}
 
 	// 加密密码
 	hash, _ := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	// 写入数据库
 	user = model.User{
 		Username: req.Username,
 		Password: string(hash),
 		Nickname: req.Nickname,
 		Email:    req.Email,
 	}
-	// 写入数据库
 	if err := model.GetDB().Create(&user).Error; err != nil {
+		logger.Log.Error("用户注册失败：数据库错误",
+			zap.String("username", req.Username),
+			zap.String("email", req.Email),
+			zap.Error(err),
+		)
 		return &userpb.RegisterResponse{Message: "注册失败"}, err
 	}
 
+	logger.Log.Info("用户注册成功",
+		zap.String("uid", strconv.FormatUint(uint64(user.ID), 10)),
+		zap.String("username", user.Username),
+		zap.String("nickname", user.Nickname),
+		zap.String("email", user.Email),
+	)
 	return &userpb.RegisterResponse{Message: "注册成功"}, nil
 }
 
 func (s *UserService) Login(ctx context.Context, req *userpb.LoginRequest) (*userpb.LoginResponse, error) {
-	log.Printf("🔐 登录请求: %v", req.Username)
-	// TODO: 验证密码、生成 JWT
+
 	var user model.User
 	// 查询用户
 	if err := model.GetDB().Where("username = ?", req.Username).First(&user).Error; err != nil {
+		logger.Log.Warn("用户登录失败：用户不存在",
+			zap.String("username", req.Username),
+			zap.Error(err),
+		)
 		return &userpb.LoginResponse{
 			Token: "",
 			User:  nil,
@@ -58,6 +75,11 @@ func (s *UserService) Login(ctx context.Context, req *userpb.LoginRequest) (*use
 
 	// 验证密码
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password)); err != nil {
+		logger.Log.Warn("用户登录失败：密码错误",
+			zap.String("uid", strconv.FormatUint(uint64(user.ID), 10)),
+			zap.String("username", user.Username),
+			zap.Error(err),
+		)
 		return &userpb.LoginResponse{
 			Token: "",
 			User:  nil,
