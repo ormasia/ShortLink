@@ -1,0 +1,104 @@
+syntax = "proto3";
+
+package paymentpb;
+
+option go_package = "shortLink/proto/paymentpb";
+
+// 支付服务接口定义
+service PaymentService {
+  // 创建支付订单
+  rpc CreatePayment(CreatePaymentRequest) returns (CreatePaymentResponse) {}
+  // 查询支付状态
+  rpc QueryPaymentStatus(QueryPaymentStatusRequest) returns (QueryPaymentStatusResponse) {}
+  // 处理支付回调
+  rpc HandlePaymentCallback(PaymentCallbackRequest) returns (PaymentCallbackResponse) {}
+  // 取消支付订单
+  rpc CancelPayment(CancelPaymentRequest) returns (CancelPaymentResponse) {}
+  // 获取支付订单详情
+  rpc GetPaymentDetail(GetPaymentDetailRequest) returns (GetPaymentDetailResponse) {}
+}
+
+// 支付订单创建请求
+message CreatePaymentRequest {
+  string order_id = 1;        // 订单ID
+  int64 amount = 2;           // 支付金额（分）
+  string currency = 3;        // 货币类型（CNY等）
+  string payment_method = 4;  // 支付方式（ALIPAY/WECHAT）
+  string description = 5;     // 订单描述
+  string notify_url = 6;      // 支付结果通知地址
+  string return_url = 7;      // 支付完成返回地址
+}
+
+// 支付订单创建响应
+message CreatePaymentResponse {
+  string payment_id = 1;      // 支付ID
+  string payment_url = 2;     // 支付链接
+  string qr_code = 3;         // 二维码链接
+  string status = 4;          // 支付状态
+}
+
+// 支付状态查询请求
+message QueryPaymentStatusRequest {
+  string payment_id = 1;      // 支付ID
+}
+
+// 支付状态查询响应
+message QueryPaymentStatusResponse {
+  string payment_id = 1;      // 支付ID
+  string status = 2;          // 支付状态
+  int64 paid_amount = 3;      // 实付金额
+  string paid_time = 4;       // 支付时间
+  string transaction_id = 5;  // 支付平台交易号
+}
+
+// 支付回调请求
+message PaymentCallbackRequest {
+  string payment_id = 1;      // 支付ID
+  string status = 2;          // 支付状态
+  int64 paid_amount = 3;      // 实付金额
+  string paid_time = 4;       // 支付时间
+  string transaction_id = 5;  // 支付平台交易号
+  string sign = 6;            // 签名
+}
+
+// 支付回调响应
+message PaymentCallbackResponse {
+  bool success = 1;           // 处理结果
+  string message = 2;         // 处理消息
+}
+
+// 取消支付请求
+message CancelPaymentRequest {
+  string payment_id = 1;      // 支付ID
+  string reason = 2;          // 取消原因
+}
+
+// 取消支付响应
+message CancelPaymentResponse {
+  bool success = 1;           // 取消结果
+  string message = 2;         // 处理消息
+}
+
+// 获取支付详情请求
+message GetPaymentDetailRequest {
+  string payment_id = 1;      // 支付ID
+}
+
+// 获取支付详情响应
+message GetPaymentDetailResponse {
+  PaymentDetail payment = 1;  // 支付详情
+}
+
+// 支付详情
+message PaymentDetail {
+  string payment_id = 1;      // 支付ID
+  string order_id = 2;        // 订单ID
+  int64 amount = 3;           // 支付金额
+  string currency = 4;        // 货币类型
+  string payment_method = 5;  // 支付方式
+  string status = 6;          // 支付状态
+  string created_time = 7;    // 创建时间
+  string paid_time = 8;       // 支付时间
+  string transaction_id = 9;  // 支付平台交易号
+  string description = 10;    // 订单描述
+}
