@@ -171,15 +171,15 @@ func Shorten(longUrl string) (string, error) {
 		}
 	}()
 
-	// 3. 加锁后再次检查缓存或数据库（幂等）
-	ShortUrlDB := model.IsOriginalURLExist(longUrl)
-	if ShortUrlDB != "" {
-		logger.Log.Info("加锁后发现已存在短链接",
-			zap.String("originalUrl", longUrl),
-			zap.String("shortUrl", ShortUrlDB))
-		cache.Set(ShortUrlDB, longUrl)
-		return ShortUrlDB, nil
-	}
+	// // 3. 加锁后再次检查缓存或数据库（幂等）
+	// ShortUrlDB := model.IsOriginalURLExist(longUrl)
+	// if ShortUrlDB != "" {
+	// 	logger.Log.Info("加锁后发现已存在短链接",
+	// 		zap.String("originalUrl", longUrl),
+	// 		zap.String("shortUrl", ShortUrlDB))
+	// 	cache.Set(ShortUrlDB, longUrl)
+	// 	return ShortUrlDB, nil
+	// }
 
 	// 4. 生成短链 Key（Base62）
 	shortKey, err := pkg.GenerateShortURL(config.GlobalConfig.App.Base62Length, cache.MightContain)

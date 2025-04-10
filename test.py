@@ -6,7 +6,7 @@ from pathlib import Path
 from threading import Lock
 
 # 文件路径
-urls_path = Path("test/urls5000.txt")
+urls_path = Path("test/urls.txt")
 log_path = Path("test/results.txt")
 
 # 读取链接
@@ -23,7 +23,7 @@ short_urls = set()
 results = []
 lock = Lock()
 
-TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxLCJyb2xlIjoidXNlciIsImV4cCI6MTc0NDIxOTIzOH0.L3Dma9_iAoC6NoN5JM_LAbnvKlx6nY2xr4JBJmXo4I0"
+TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxLCJyb2xlIjoidXNlciIsImV4cCI6MTc0NDM0MDA1NH0.Yu8RM1RPKe9osqYke3I3S6BiiZMkmDSQTBLzfK37LbQ"
 
 def send_request(long_url):
     try:
@@ -50,7 +50,7 @@ def send_request(long_url):
 
 # 执行测试
 start_time = time.time()
-with concurrent.futures.ThreadPoolExecutor(max_workers=100) as executor:  # ✅ 建议从 10~20 开始测试
+with concurrent.futures.ThreadPoolExecutor(max_workers=200) as executor:  # ✅ 建议从 10~20 开始测试
     futures = [executor.submit(send_request, url) for url in urls]
     for future in concurrent.futures.as_completed(futures):
         results.append(future.result())
