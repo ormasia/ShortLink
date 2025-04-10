@@ -112,3 +112,24 @@ func (s *UserService) Login(ctx context.Context, req *userpb.LoginRequest) (*use
 		},
 	}, nil
 }
+
+// Logout 用户登出，使token失效
+func (s *UserService) Logout(ctx context.Context, req *userpb.LogoutRequest) (*userpb.LogoutResponse, error) {
+	// 从Redis中删除token
+	token := req.Token
+
+	// 获取用户ID用于日志记录
+	userID := cache.Get(token)
+
+	// 删除token
+	cache.Del(token)
+
+	logger.Log.Info("用户登出成功",
+		zap.String("uid", userID),
+		zap.String("token", token),
+	)
+
+	return &userpb.LogoutResponse{
+		Message: "登出成功",
+	}, nil
+}

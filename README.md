@@ -8,7 +8,7 @@
 - 后期目标是使用docker，k8s做一个实际上线的部署
 
 
-## 采用GPT4.5生成的框架，可供参考
+## 采用GPT4.5生成的框架，cursor和trae开发
 MINI短链项目架构设计
 
 一、架构概述
@@ -47,11 +47,13 @@ Singleflight：防止缓存击穿
 
 API服务层
 
-统一的HTTP接口对外提供服务：
+使用Gin框架实现API服务，采用restful风格。
 
-转链接接口：POST /shorten
+~~统一的HTTP接口对外提供服务：~~
 
-查链接接口：GET /:short_url
+~~转链接接口：POST /shorten~~
+
+~~查链接接口：GET /:short_url~~
 
 业务逻辑层
 
@@ -99,9 +101,9 @@ Redis缓存：提升热点链接访问性能。
 
 六、部署方案
 
-容器化部署（Docker + Kubernetes），实现服务水平扩展和高可用。
+容器化部署（Docker ~~+ Kubernetes~~），实现服务水平扩展和高可用。
 
-日志和监控：Prometheus + Grafana实现服务监控和报警。
+~~日志和监控：Prometheus + Grafana实现服务监控和报警。~~
 
 架构优势
 
