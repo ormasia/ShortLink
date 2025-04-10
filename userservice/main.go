@@ -36,13 +36,24 @@ func main() {
 	// 初始化Redis
 	cache.InitRedis(config.GlobalConfig.Redis.Host, config.GlobalConfig.Redis.Password, config.GlobalConfig.Redis.Port, config.GlobalConfig.Redis.DB)
 
+	// 创建gRPC服务器
 	grpcServer := grpc.NewServer()
+
+	// 注册用户服务
 	pb.RegisterUserServiceServer(grpcServer, &service.UserService{})
 
+	// 注册RBAC服务
+	rbacService := service.NewRBACService(model.GetDB())
+	pb.RegisterRBACServiceServer(grpcServer, rbacService)
+
+	// 启动gRPC服务器
 	lis, err := net.Listen("tcp", ":8081")
 	if err != nil {
 		logger.Log.Error("failed to listen", zap.Error(err))
+		return
 	}
+
+	logger.Log.Info("gRPC server started on :8081")
 	if err := grpcServer.Serve(lis); err != nil {
 		logger.Log.Error("failed to serve", zap.Error(err))
 	}

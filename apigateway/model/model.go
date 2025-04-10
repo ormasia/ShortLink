@@ -2,7 +2,6 @@ package model
 
 import (
 	"fmt"
-	"time"
 
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -20,13 +19,6 @@ func InitDB(dataSource string) error {
 	// 自动建表
 	_ = db.AutoMigrate(&URLMapping{})
 	return err
-}
-
-type URLMapping struct {
-	ShortURL    string `gorm:"primaryKey"`
-	OriginalURL string `gorm:"not null"`
-	UserID      string
-	CreateTime  time.Time `gorm:"autoCreateTime"`
 }
 
 func (URLMapping) TableName() string {
@@ -57,11 +49,11 @@ func GetAllShortUrls() []string {
 // 返回：
 //   - error: 错误信息，如果保存成功则为nil
 func SaveURLMapping(shortURL, originalURL string) error {
-	URLMapping := URLMapping{
+	mapping := URLMapping{
 		ShortURL:    shortURL,
 		OriginalURL: originalURL,
 	}
-	result := db.Create(&URLMapping)
+	result := db.Create(&mapping)
 	return result.Error
 }
 
