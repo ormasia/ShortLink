@@ -112,6 +112,47 @@ func main() {
 			c.JSON(http.StatusOK, gin.H{"shortlink": res.ShortUrl})
 		})
 
+		// 批量生成短链接
+		auth.POST("/api/shorten/batch", func(c *gin.Context) {
+			var req pbShortlink.BatchShortenRequest
+			if err := c.ShouldBindJSON(&req); err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "参数错误"})
+				return
+			}
+
+			// 检查URL列表是否为空
+			if len(req.OriginalUrls) == 0 {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "URL列表不能为空"})
+				return
+			}
+
+			// 设置默认并发数
+			if req.Concurrency <= 0 {
+				req.Concurrency = 10
+			}
+			// 限制最大并发数
+			if req.Concurrency > 50 {
+				req.Concurrency = 50
+			}
+
+			// 设置超时时间，批量处理可能需要更长时间
+			ctx, cancel := context.WithTimeout(context.Background(), 50*time.Second)
+			defer cancel()
+
+			res, err := clientShortlink.BatchShortenURLs(ctx, &req)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "批量生成短链接失败"})
+				return
+			}
+
+			c.JSON(http.StatusOK, gin.H{
+				"results":       res.Results,
+				"total_count":   res.TotalCount,
+				"success_count": res.SuccessCount,
+				"elapsed_time":  res.ElapsedTime,
+			})
+		})
+
 		auth.GET("/api/shorten/top", func(c *gin.Context) {
 			req := &pbShortlink.TopRequest{Count: 10}
 

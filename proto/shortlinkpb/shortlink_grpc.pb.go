@@ -19,9 +19,10 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	ShortlinkService_ShortenURL_FullMethodName  = "/shortlink.ShortlinkService/ShortenURL"
-	ShortlinkService_Redierect_FullMethodName   = "/shortlink.ShortlinkService/Redierect"
-	ShortlinkService_GetTopLinks_FullMethodName = "/shortlink.ShortlinkService/GetTopLinks"
+	ShortlinkService_ShortenURL_FullMethodName       = "/shortlink.ShortlinkService/ShortenURL"
+	ShortlinkService_Redierect_FullMethodName        = "/shortlink.ShortlinkService/Redierect"
+	ShortlinkService_GetTopLinks_FullMethodName      = "/shortlink.ShortlinkService/GetTopLinks"
+	ShortlinkService_BatchShortenURLs_FullMethodName = "/shortlink.ShortlinkService/BatchShortenURLs"
 )
 
 // ShortlinkServiceClient is the client API for ShortlinkService service.
@@ -34,6 +35,8 @@ type ShortlinkServiceClient interface {
 	Redierect(ctx context.Context, in *ResolveRequest, opts ...grpc.CallOption) (*ResolveResponse, error)
 	// 获取前N条热点link
 	GetTopLinks(ctx context.Context, in *TopRequest, opts ...grpc.CallOption) (*TopResponse, error)
+	// 批量生成短链接
+	BatchShortenURLs(ctx context.Context, in *BatchShortenRequest, opts ...grpc.CallOption) (*BatchShortenResponse, error)
 }
 
 type shortlinkServiceClient struct {
@@ -74,6 +77,16 @@ func (c *shortlinkServiceClient) GetTopLinks(ctx context.Context, in *TopRequest
 	return out, nil
 }
 
+func (c *shortlinkServiceClient) BatchShortenURLs(ctx context.Context, in *BatchShortenRequest, opts ...grpc.CallOption) (*BatchShortenResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BatchShortenResponse)
+	err := c.cc.Invoke(ctx, ShortlinkService_BatchShortenURLs_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ShortlinkServiceServer is the server API for ShortlinkService service.
 // All implementations must embed UnimplementedShortlinkServiceServer
 // for forward compatibility.
@@ -84,6 +97,8 @@ type ShortlinkServiceServer interface {
 	Redierect(context.Context, *ResolveRequest) (*ResolveResponse, error)
 	// 获取前N条热点link
 	GetTopLinks(context.Context, *TopRequest) (*TopResponse, error)
+	// 批量生成短链接
+	BatchShortenURLs(context.Context, *BatchShortenRequest) (*BatchShortenResponse, error)
 	mustEmbedUnimplementedShortlinkServiceServer()
 }
 
@@ -102,6 +117,9 @@ func (UnimplementedShortlinkServiceServer) Redierect(context.Context, *ResolveRe
 }
 func (UnimplementedShortlinkServiceServer) GetTopLinks(context.Context, *TopRequest) (*TopResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetTopLinks not implemented")
+}
+func (UnimplementedShortlinkServiceServer) BatchShortenURLs(context.Context, *BatchShortenRequest) (*BatchShortenResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method BatchShortenURLs not implemented")
 }
 func (UnimplementedShortlinkServiceServer) mustEmbedUnimplementedShortlinkServiceServer() {}
 func (UnimplementedShortlinkServiceServer) testEmbeddedByValue()                          {}
@@ -178,6 +196,24 @@ func _ShortlinkService_GetTopLinks_Handler(srv interface{}, ctx context.Context,
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ShortlinkService_BatchShortenURLs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BatchShortenRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ShortlinkServiceServer).BatchShortenURLs(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ShortlinkService_BatchShortenURLs_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ShortlinkServiceServer).BatchShortenURLs(ctx, req.(*BatchShortenRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ShortlinkService_ServiceDesc is the grpc.ServiceDesc for ShortlinkService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -196,6 +232,10 @@ var ShortlinkService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetTopLinks",
 			Handler:    _ShortlinkService_GetTopLinks_Handler,
+		},
+		{
+			MethodName: "BatchShortenURLs",
+			Handler:    _ShortlinkService_BatchShortenURLs_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

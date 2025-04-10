@@ -35,6 +35,36 @@ message TopResponse {
   repeated ShortLinkItem top = 1;
 }
 
+// 批量生成短链接的请求
+message BatchShortenRequest {
+  // 需要转换的原始长URL列表
+  repeated string original_urls = 1;
+  // 并发处理的数量，默认为10
+  int32 concurrency = 2;
+}
+
+// 批量生成短链接的单个结果
+message BatchShortenResult {
+  // 原始URL
+  string original_url = 1;
+  // 生成的短URL
+  string short_url = 2;
+  // 错误信息，如果有的话
+  string error = 3;
+}
+
+// 批量生成短链接的响应
+message BatchShortenResponse {
+  // 批量生成结果列表
+  repeated BatchShortenResult results = 1;
+  // 总请求数量
+  int32 total_count = 2;
+  // 成功生成的数量
+  int32 success_count = 3;
+  // 处理耗时
+  string elapsed_time = 4;
+}
+
 service ShortlinkService {
   // 长链接 → 短链接
   rpc ShortenURL(ShortenRequest) returns (ShortenResponse);
@@ -44,4 +74,7 @@ service ShortlinkService {
 
   // 获取前N条热点link
   rpc GetTopLinks (TopRequest) returns (TopResponse);
-}  
+  
+  // 批量生成短链接
+  rpc BatchShortenURLs (BatchShortenRequest) returns (BatchShortenResponse);
+}

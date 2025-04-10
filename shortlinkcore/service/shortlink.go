@@ -166,7 +166,7 @@ func Shorten(longUrl string) (string, error) {
 	}
 	defer func() {
 		logger.Log.Debug("释放分布式锁", zap.String("lockKey", lockKey))
-		if err := lock.Unlock(); err != nil {
+		if err = lock.Unlock(); err != nil {
 			logger.Log.Warn("解锁失败", zap.Error(err), zap.String("url", longUrl))
 		}
 	}()
