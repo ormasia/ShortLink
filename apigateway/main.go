@@ -10,7 +10,6 @@ import (
 	"shortLink/apigateway/cache"
 	"shortLink/apigateway/config"
 	"shortLink/apigateway/middleware"
-	"shortLink/apigateway/model"
 	pbShortlink "shortLink/proto/shortlinkpb"
 	pb "shortLink/proto/userpb"
 
@@ -28,8 +27,6 @@ func main() {
 	if err != nil {
 		log.Fatalf("❌ 初始化配置失败: %v", err)
 	}
-	// 初始化数据库
-	model.InitDB(config.GlobalConfig.MySQL.GetDSN())
 
 	// 初始化Redis
 	// TODO:使用函数直接配置
@@ -50,40 +47,44 @@ func main() {
 	}
 	client := pb.NewUserServiceClient(conn)
 
-	r.POST("/api/user/register", func(c *gin.Context) {
+	r.POST("/api/v1/users", func(c *gin.Context) {
 		var req pb.RegisterRequest
-		if err := c.ShouldBindJSON(&req); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "参数错误"})
+		if bindErr := c.ShouldBindJSON(&req); bindErr != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "参数错误", "data": nil})
 			return
 		}
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 		defer cancel()
 		// 调用用户服务注册，已经检验过参数，所以这里有可能的错误是用户名已存在，数据库错误
-		res, err := client.Register(ctx, &req)
-		if err != nil {
+		res, registerErr := client.Register(ctx, &req)
+		if registerErr != nil {
 			// TODO: 数据库错误 区分用户名已存在和数据库错误
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "注册失败"})
+			c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "注册失败", "data": nil})
 			return
 		}
-		c.JSON(http.StatusOK, gin.H{"message": res.Message})
+		c.JSON(http.StatusOK, gin.H{"code": 200, "message": res.Message, "data": res.Message})
 	})
 
-	r.POST("/api/user/login", func(c *gin.Context) {
+	r.POST("/api/v1/users/login", func(c *gin.Context) {
 		var req pb.LoginRequest
-		if err := c.ShouldBindJSON(&req); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "参数错误"})
+		if bindErr := c.ShouldBindJSON(&req); bindErr != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "参数错误", "data": nil})
 			return
 		}
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 		defer cancel()
-		res, err := client.Login(ctx, &req)
-		if err != nil {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "登录失败"})
+		res, loginErr := client.Login(ctx, &req)
+		if loginErr != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"code": 401, "message": "登录失败", "data": nil})
 			return
 		}
 		c.JSON(http.StatusOK, gin.H{
-			"token": res.Token,
-			"user":  res.User,
+			"code":    200,
+			"message": "登录成功",
+			"data": gin.H{
+				"token": res.Token,
+				"user":  res.User,
+			},
 		})
 	})
 
@@ -95,44 +96,36 @@ func main() {
 
 	auth := r.Group("/")
 	auth.Use(middleware.AuthMiddleware()) // JWT 鉴权中间件
-	{                                     // 创建短链接
-		auth.POST("/api/shorten", func(c *gin.Context) {
+	{
+		// 创建短链接
+		auth.POST("/api/v1/links", func(c *gin.Context) {
 			var req pbShortlink.ShortenRequest
 			if err := c.ShouldBindJSON(&req); err != nil {
-				c.JSON(http.StatusBadRequest, gin.H{"error": "参数错误"})
+				c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "参数错误", "data": nil})
 				return
 			}
 			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 			defer cancel()
 			res, err := clientShortlink.ShortenURL(ctx, &req)
 			if err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "创建短链接失败"})
+				c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "创建短链接失败", "data": nil})
 				return
 			}
-			c.JSON(http.StatusOK, gin.H{"shortlink": res.ShortUrl})
+			c.JSON(http.StatusOK, gin.H{"code": 200, "message": "创建成功", "data": gin.H{"shortlink": res.ShortUrl}})
 		})
 
 		// 批量生成短链接
-		auth.POST("/api/shorten/batch", func(c *gin.Context) {
+		auth.POST("/api/v1/links/batch", func(c *gin.Context) {
 			var req pbShortlink.BatchShortenRequest
 			if err := c.ShouldBindJSON(&req); err != nil {
-				c.JSON(http.StatusBadRequest, gin.H{"error": "参数错误"})
+				c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "参数错误", "data": nil})
 				return
 			}
 
 			// 检查URL列表是否为空
 			if len(req.OriginalUrls) == 0 {
-				c.JSON(http.StatusBadRequest, gin.H{"error": "URL列表不能为空"})
+				c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "URL列表不能为空", "data": nil})
 				return
-			}
-
-			// 设置默认并发数
-			if req.Concurrency <= 0 {
-				req.Concurrency = 10
-			}
-			// 限制最大并发数
-			if req.Concurrency > 50 {
-				req.Concurrency = 50
 			}
 
 			// 设置超时时间，批量处理可能需要更长时间
@@ -141,19 +134,23 @@ func main() {
 
 			res, err := clientShortlink.BatchShortenURLs(ctx, &req)
 			if err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "批量生成短链接失败"})
+				c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "批量生成短链接失败", "data": nil})
 				return
 			}
 
 			c.JSON(http.StatusOK, gin.H{
-				"results":       res.Results,
-				"total_count":   res.TotalCount,
-				"success_count": res.SuccessCount,
-				"elapsed_time":  res.ElapsedTime,
+				"code":    200,
+				"message": "批量创建成功",
+				"data": gin.H{
+					"results":       res.Results,
+					"total_count":   res.TotalCount,
+					"success_count": res.SuccessCount,
+					"elapsed_time":  res.ElapsedTime,
+				},
 			})
 		})
 
-		auth.GET("/api/shorten/top", func(c *gin.Context) {
+		auth.GET("/api/v1/links/top", func(c *gin.Context) {
 			req := &pbShortlink.TopRequest{Count: 10}
 
 			// 超时2秒就返回
@@ -162,22 +159,22 @@ func main() {
 
 			resp, err := clientShortlink.GetTopLinks(ctx, req)
 			if err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "获取排行榜失败"})
+				c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "获取排行榜失败", "data": nil})
 				return
 			}
 
-			c.JSON(http.StatusOK, gin.H{"top": resp.Top})
+			c.JSON(http.StatusOK, gin.H{"code": 200, "message": "获取成功", "data": gin.H{"top": resp.Top}})
 		})
 	}
 	// 跳转
-	r.GET("/:short_url", func(c *gin.Context) {
+	r.GET("/api/v1/links/:short_url", func(c *gin.Context) {
 		var req pbShortlink.ResolveRequest
 		req.ShortUrl = c.Param("short_url")
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 		defer cancel()
 		res, err := clientShortlink.Redierect(ctx, &req)
 		if err != nil {
-			c.JSON(http.StatusNotFound, gin.H{"error": "短链接无效"})
+			c.JSON(http.StatusNotFound, gin.H{"code": 404, "message": "短链接无效", "data": nil})
 			return
 		}
 		c.Redirect(http.StatusFound, res.OriginalUrl)

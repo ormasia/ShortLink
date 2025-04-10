@@ -1,0 +1,126 @@
+syntax = "proto3";
+
+package user;
+
+option go_package = "./proto/userpb";
+
+// 权限检查请求
+message CheckPermissionRequest {
+  uint32 user_id = 1;
+  string resource = 2;
+  string action = 3;
+}
+
+// 权限检查响应
+message CheckPermissionResponse {
+  bool has_permission = 1;
+  string message = 2;
+}
+
+// 角色信息
+message RoleInfo {
+  uint32 id = 1;
+  string name = 2;
+  string description = 3;
+}
+
+// 权限信息
+message PermissionInfo {
+  uint32 id = 1;
+  string name = 2;
+  string description = 3;
+  string resource = 4;
+  string action = 5;
+}
+
+// 获取用户角色请求
+message GetUserRolesRequest {
+  uint32 user_id = 1;
+}
+
+// 获取用户角色响应
+message GetUserRolesResponse {
+  repeated RoleInfo roles = 1;
+}
+
+// 获取角色权限请求
+message GetRolePermissionsRequest {
+  uint32 role_id = 1;
+}
+
+// 获取角色权限响应
+message GetRolePermissionsResponse {
+  repeated PermissionInfo permissions = 1;
+}
+
+// 创建角色请求
+message CreateRoleRequest {
+  string name = 1;
+  string description = 2;
+}
+
+// 创建角色响应
+message CreateRoleResponse {
+  RoleInfo role = 1;
+  string message = 2;
+}
+
+// 创建权限请求
+message CreatePermissionRequest {
+  string name = 1;
+  string description = 2;
+  string resource = 3;
+  string action = 4;
+}
+
+// 创建权限响应
+message CreatePermissionResponse {
+  PermissionInfo permission = 1;
+  string message = 2;
+}
+
+// 分配角色给用户请求
+message AssignRoleToUserRequest {
+  uint32 user_id = 1;
+  uint32 role_id = 2;
+}
+
+// 分配角色给用户响应
+message AssignRoleToUserResponse {
+  string message = 1;
+}
+
+// 分配权限给角色请求
+message AssignPermissionToRoleRequest {
+  uint32 role_id = 1;
+  uint32 permission_id = 2;
+}
+
+// 分配权限给角色响应
+message AssignPermissionToRoleResponse {
+  string message = 1;
+}
+
+// RBAC服务
+service RBACService {
+  // 权限检查
+  rpc CheckPermission(CheckPermissionRequest) returns (CheckPermissionResponse);
+  
+  // 获取用户角色
+  rpc GetUserRoles(GetUserRolesRequest) returns (GetUserRolesResponse);
+  
+  // 获取角色权限
+  rpc GetRolePermissions(GetRolePermissionsRequest) returns (GetRolePermissionsResponse);
+  
+  // 角色管理
+  rpc CreateRole(CreateRoleRequest) returns (CreateRoleResponse);
+  
+  // 权限管理
+  rpc CreatePermission(CreatePermissionRequest) returns (CreatePermissionResponse);
+  
+  // 角色分配
+  rpc AssignRoleToUser(AssignRoleToUserRequest) returns (AssignRoleToUserResponse);
+  
+  // 权限分配
+  rpc AssignPermissionToRole(AssignPermissionToRoleRequest) returns (AssignPermissionToRoleResponse);
+}

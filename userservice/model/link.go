@@ -1,8 +1,6 @@
 package model
 
 import (
-	"time"
-
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 
@@ -18,20 +16,9 @@ func GetDB() *gorm.DB {
 func InitDB(dataSource string) error {
 	var err error
 	db, err = gorm.Open(mysql.Open(dataSource), &gorm.Config{})
-	// 自动建表
-	_ = db.AutoMigrate(&User{})
+	// 自动建表自动递归创建 User 模型中关联的所有表结构（包括多对多中间表）
+	_ = db.AutoMigrate(&User{}, &Role{}, &Permission{}, &UserRole{}, &RolePermission{})
 	return err
-}
-
-type URLMapping struct {
-	ShortURL    string `gorm:"primaryKey"`
-	OriginalURL string `gorm:"not null"`
-	UserID      string
-	CreateTime  time.Time `gorm:"autoCreateTime"`
-}
-
-func (URLMapping) TableName() string {
-	return "url_mapping" // 显式指定表名
 }
 
 // SaveURLMapping 保存短链接与原始URL的映射关系
@@ -42,11 +29,11 @@ func (URLMapping) TableName() string {
 // 返回：
 //   - error: 错误信息，如果保存成功则为nil
 func SaveURLMapping(shortURL, originalURL string) error {
-	URLMapping := URLMapping{
+	mapping := URLMapping{
 		ShortURL:    shortURL,
 		OriginalURL: originalURL,
 	}
-	result := db.Create(&URLMapping)
+	result := db.Create(&mapping)
 	return result.Error
 }
 
@@ -80,6 +67,11 @@ func IsOriginalURLExist(originalURL string) string {
 	return mapping.ShortURL
 }
 
+// 获取所有短链接
+//
+// 返回：
+//   - []string: 短链接列表
+//   - error: 错误信息，如果查询成功则为nil
 func GetAllShortUrls() []string {
 	var urls []string
 	// 获取所有短链接

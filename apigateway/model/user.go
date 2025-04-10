@@ -16,21 +16,16 @@ type URLMapping struct {
 	CreateTime  time.Time `gorm:"autoCreateTime"`
 }
 
-func (URLMapping) TableName() string {
-	return "url_mapping" // 显式指定表名
-}
-
 type User struct {
-	ID        uint           `gorm:"primaryKey"`
-	Username  string         `gorm:"uniqueIndex;size:50;not null"`
-	Password  string         `gorm:"size:255;not null"`
-	Nickname  string         `gorm:"size:50"`
-	Email     string         `gorm:"size:100"`
-	Role      string         `gorm:"size:20;default:user"`
-	Status    int            `gorm:"default:0"` // 0 = 正常，1 = 禁用
-	CreatedAt time.Time      `gorm:"autoCreateTime"`
-	UpdatedAt time.Time      `gorm:"autoUpdateTime"`
-	DeletedAt gorm.DeletedAt `gorm:"index"`
+	ID        uint           `gorm:"primaryKey" json:"id"`
+	Username  string         `gorm:"uniqueIndex;size:50;not null" json:"username"`
+	Password  string         `gorm:"size:255;not null" json:"-"`
+	Nickname  string         `gorm:"size:50" json:"nickname"`
+	Email     string         `gorm:"size:100" json:"email"`
+	Status    int            `gorm:"default:0" json:"status"` // 0 = 正常，1 = 禁用
+	CreatedAt time.Time      `gorm:"autoCreateTime" json:"created_at"`
+	UpdatedAt time.Time      `gorm:"autoUpdateTime" json:"updated_at"`
+	DeletedAt gorm.DeletedAt `gorm:"index" json:"deleted_at"`
 	Roles     []Role         `gorm:"many2many:user_roles;" json:"roles"`
 }
 
@@ -46,7 +41,7 @@ type Role struct {
 	CreatedAt   time.Time      `json:"created_at"`
 	UpdatedAt   time.Time      `json:"updated_at"`
 	DeletedAt   gorm.DeletedAt `gorm:"index" json:"deleted_at"`
-	Users       []User         `gorm:"many2many:user_roles;" json:"users"` //这个是 GORM 的 反向关系映射，和你在 User 中的 Roles []Role 是 对称存在 的。
+	Users       []User         `gorm:"many2many:user_roles;" json:"users"`
 }
 
 // Permission 权限表
@@ -74,4 +69,9 @@ type RolePermission struct {
 	RoleID       uint      `gorm:"primarykey" json:"role_id"`
 	PermissionID uint      `gorm:"primarykey" json:"permission_id"`
 	CreatedAt    time.Time `json:"created_at"`
+}
+
+// 初始化RBAC相关表
+func InitRBACTables(db *gorm.DB) error {
+	return db.AutoMigrate(&Role{}, &Permission{}, &UserRole{}, &RolePermission{})
 }

@@ -20,9 +20,9 @@ type UserService struct {
 }
 
 func (s *UserService) Register(ctx context.Context, req *userpb.RegisterRequest) (*userpb.RegisterResponse, error) {
-	// "TODO": 写入数据库、校验重复
-	var user model.User
 
+	// 校验重复
+	var user model.User
 	if err := model.GetDB().Where("username = ?", req.Username).First(&user).Error; err != gorm.ErrRecordNotFound {
 		logger.Log.Warn("用户注册失败：用户名已存在",
 			zap.String("username", req.Username),
@@ -33,6 +33,7 @@ func (s *UserService) Register(ctx context.Context, req *userpb.RegisterRequest)
 
 	// 加密密码
 	hash, _ := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+
 	// 写入数据库
 	user = model.User{
 		Username: req.Username,
@@ -88,8 +89,10 @@ func (s *UserService) Login(ctx context.Context, req *userpb.LoginRequest) (*use
 
 	// 生成 JWT
 	token, _ := jwt.GenerateToken(user.ID, user.Role, 24*time.Hour)
+
 	// 写入redis
 	cache.Set(token, strconv.FormatUint(uint64(user.ID), 10))
+
 	logger.Log.Info("用户登录成功",
 		zap.String("uid", strconv.FormatUint(uint64(user.ID), 10)),
 		zap.String("username", user.Username),
@@ -97,6 +100,7 @@ func (s *UserService) Login(ctx context.Context, req *userpb.LoginRequest) (*use
 		zap.String("email", user.Email),
 		zap.String("role", user.Role),
 	)
+
 	return &userpb.LoginResponse{
 		Token: token,
 		User: &userpb.UserInfo{
