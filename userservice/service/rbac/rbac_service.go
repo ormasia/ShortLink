@@ -26,78 +26,72 @@ func NewRBACService(rbacRepo repository.RBACRepository, redisCache repository.RB
 	}
 }
 
-// GetUserRoles 获取用户的所有角色
-func (s *RBACService) getUserRoles(ctx context.Context, userID uint) ([]model.Role, error) {
-	roles, err := s.rbacRepo.GetUserRoles(ctx, userID)
-	if err != nil {
-		return nil, err
-	}
-	return roles, nil
-}
+// // GetUserRoles 获取用户的所有角色
+// func (s *RBACService) getUserRoles(ctx context.Context, userID uint) ([]model.Role, error) {
+// 	roles, err := s.rbacRepo.GetUserRoles(ctx, userID)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	return roles, nil
+// }
 
-// GetRolePermissions 获取角色的所有权限
-func (s *RBACService) getRolePermissions(ctx context.Context, roleID uint) ([]model.Permission, error) {
-	// 优先从缓存中获取权限信息
-	permissions, err := s.redisCache.GetRolePermissions(roleID)
-	if err == nil {
-		// 将缓存中的权限类型转换为服务所需的类型
-		var servicePermissions []model.Permission
-		for _, p := range permissions {
-			servicePermissions = append(servicePermissions, p)
-		}
-		return servicePermissions, nil
-	}
+// // GetRolePermissions 获取角色的所有权限
+// func (s *RBACService) getRolePermissions(ctx context.Context, roleID uint) ([]model.Permission, error) {
+// 	// 优先从缓存中获取权限信息
+// 	permissions, err := s.redisCache.GetRolePermissions(roleID)
+// 	if err == nil {
+// 		// 将缓存中的权限类型转换为服务所需的类型
+// 		var servicePermissions []model.Permission
+// 		for _, p := range permissions {
+// 			servicePermissions = append(servicePermissions, p)
+// 		}
+// 		return servicePermissions, nil
+// 	}
 
-	// 缓存未命中，从数据库获取
-	var permissions1 []model.Permission
-	// 通过中间表查询角色对应的权限
-	permissions1, err = s.rbacRepo.GetRolePermissions(ctx, roleID)
-	if err != nil {
-		return nil, err
-	}
+// 	// 缓存未命中，从数据库获取
+// 	var permissions1 []model.Permission
+// 	// 通过中间表查询角色对应的权限
+// 	permissions1, err = s.rbacRepo.GetRolePermissions(ctx, roleID)
+// 	if err != nil {
+// 		return nil, err
+// 	}
 
-	// 更新缓存
-	if err := s.redisCache.SetRolePermissions(roleID, permissions1); err != nil {
-		// 缓存更新失败只记录日志，不影响正常流程
-		logger.Log.Warn("更新角色权限缓存失败", zap.Error(err))
-	}
+// 	// 更新缓存
+// 	if err := s.redisCache.SetRolePermissions(roleID, permissions1); err != nil {
+// 		// 缓存更新失败只记录日志，不影响正常流程
+// 		logger.Log.Warn("更新角色权限缓存失败", zap.Error(err))
+// 	}
 
-	return permissions1, nil
-}
+// 	return permissions1, nil
+// }
 
-// HasPermission 检查用户是否有指定的权限
-func (s *RBACService) hasPermission(ctx context.Context, userID uint, requiredResource, requiredAction string) bool {
-	roles, err := s.getUserRoles(ctx, userID)
-	if err != nil {
-		logger.Log.Warn("获取用户角色失败",
-			zap.Uint("user_id", userID),
-			zap.String("resource", requiredResource),
-			zap.String("action", requiredAction),
-			zap.Error(err))
-		return false
-	}
+// // HasPermission 检查用户是否有指定的权限
+// func (s *RBACService) hasPermission(ctx context.Context, userID uint, requiredResource, requiredAction string) bool {
+// 	role, err := s.rbacRepo.GetRoleByID(ctx, userID)
+// 	if err != nil {
+// 		logger.Log.Warn("获取用户角色失败",
+// 			zap.Uint("user_id", userID),
+// 			zap.String("resource", requiredResource),
+// 			zap.String("action", requiredAction),
+// 			zap.Error(err))
+// 		return false
+// 	}
 
-	for _, role := range roles {
-		permissions, err := s.getRolePermissions(ctx, role.ID)
-		if err != nil {
-			logger.Log.Warn("获取角色权限失败",
-				zap.Uint("user_id", userID),
-				zap.Uint("role_id", role.ID),
-				zap.String("resource", requiredResource),
-				zap.String("action", requiredAction),
-				zap.Error(err))
-			continue
-		}
+// 	permission, err := s.rbacRepo.GetPermissionByID(ctx, role.ID)
+// 	if err != nil {
+// 		logger.Log.Warn("获取角色权限失败",
+// 			zap.Uint("user_id", userID),
+// 			zap.Uint("role_id", role.ID),
+// 			zap.String("resource", requiredResource),
+// 			zap.String("action", requiredAction),
+// 			zap.Error(err))
+// 	}
 
-		for _, perm := range permissions {
-			if perm.Resource == requiredResource && perm.Action == requiredAction {
-				return true
-			}
-		}
-	}
-
-	return false
-}
+// 	if permission.Resource == requiredResource && permission.Action == requiredAction {
+// 		return true
+// 	}
+// 	return false
+// }
 
 // CheckPermission 实现gRPC接口，检查用户是否有指定的权限
 func (s *RBACService) CheckPermission(ctx context.Context, req *userpb.CheckPermissionRequest) (*userpb.CheckPermissionResponse, error) {
@@ -105,7 +99,18 @@ func (s *RBACService) CheckPermission(ctx context.Context, req *userpb.CheckPerm
 	resource := req.Resource
 	action := req.Action
 
-	hasPermission := s.hasPermission(ctx, userID, resource, action)
+	hasPermission, err := s.rbacRepo.HasPermission(ctx, userID, resource, action)
+	if err != nil {
+		logger.Log.Error("检查权限失败",
+			zap.Uint("user_id", userID),
+			zap.String("resource", resource),
+			zap.String("action", action),
+			zap.Error(err))
+		return &userpb.CheckPermissionResponse{
+			HasPermission: false,
+			Message:       "检查权限时发生错误",
+		}, err
+	}
 
 	var message string
 	if hasPermission {
@@ -156,7 +161,7 @@ func (s *RBACService) GetUserRoles(ctx context.Context, req *userpb.GetUserRoles
 func (s *RBACService) GetRolePermissions(ctx context.Context, req *userpb.GetRolePermissionsRequest) (*userpb.GetRolePermissionsResponse, error) {
 	roleID := uint(req.RoleId)
 
-	permissions, err := s.getRolePermissions(ctx, roleID)
+	permissions, err := s.rbacRepo.GetRolePermissions(ctx, roleID)
 	if err != nil {
 		logger.Log.Error("获取角色权限失败", zap.Uint("role_id", roleID), zap.Error(err))
 		return &userpb.GetRolePermissionsResponse{}, err
