@@ -88,6 +88,28 @@ func main() {
 		})
 	})
 
+	r.POST("/api/v1/users/logout", func(c *gin.Context) {
+		var req pb.LogoutRequest
+		if bindErr := c.ShouldBindJSON(&req); bindErr != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "参数错误", "data": nil})
+			return
+		}
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+		res, logoutErr := client.Logout(ctx, &req)
+		if logoutErr != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"code": 401, "message": "登出失败", "data": nil})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{
+			"code":    200,
+			"message": "登出成功",
+			"data": gin.H{
+				"message": res.Message,
+			},
+		})
+	})
+
 	connShortlink, err := grpc.NewClient("localhost:8082", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatalf("连接 user-service 失败: %v", err)

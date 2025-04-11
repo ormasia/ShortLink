@@ -9,8 +9,8 @@ import (
 	"shortLink/userservice/model"
 	"shortLink/userservice/mq"
 	"shortLink/userservice/repository"
+	"shortLink/userservice/service"
 	"shortLink/userservice/service/auth"
-	"shortLink/userservice/service/rbac"
 	"shortLink/userservice/service/user"
 	"time"
 
@@ -44,20 +44,20 @@ func main() {
 	// 创建依赖组件
 	// 1. 创建缓存适配器
 	redisCache := repository.NewRedisCache(rdb, 24*time.Hour)
-	rbacCache := repository.NewRBACRedisCache(rdb, 24*time.Hour)
 
 	// 2. 创建存储库
 	userRepository := repository.NewGormUserRepository(db)
-	rbacRepository := repository.NewGormRBACRepository(db)
+	tokenRepository := repository.NewRedisTokenRepository(redisCache)
 
 	// 3. 创建认证服务
-	authService := auth.NewDefaultAuthService(redisCache)
+	tokenGenerator := auth.NewJWTTokenGenerator()
+	authService := auth.NewDefaultAuthService(tokenGenerator, tokenRepository)
 
 	// 4. 创建用户服务
 	userService := user.NewUserService(userRepository, authService)
 
 	// 5. 创建RBAC服务
-	rbacService := rbac.NewRBACService(rbacRepository, rbacCache)
+	rbacService := service.NewRBACService(db)
 
 	// 创建gRPC服务器
 	grpcServer := grpc.NewServer()

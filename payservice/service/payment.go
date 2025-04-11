@@ -5,27 +5,46 @@ import (
 	"fmt"
 	"shortLink/payservice/logger"
 	"shortLink/payservice/model"
+	"shortLink/proto/orderpb"
 	"shortLink/proto/paymentpb"
 	"time"
 
 	"github.com/google/uuid"
-	"go.uber.org/zap"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	"gorm.io/gorm"
 )
 
 // PaymentService 实现支付相关的gRPC服务
 type PaymentService struct {
 	paymentpb.UnimplementedPaymentServiceServer
-	DB *gorm.DB
+	DB     *gorm.DB
+	Config *PaymentServiceConfig
+}
+
+// PaymentServiceConfig 支付服务配置
+type PaymentServiceConfig struct {
+	OrderServiceAddr string // 订单服务地址
 }
 
 // NewPaymentService 创建支付服务实例
-func NewPaymentService(db *gorm.DB) *PaymentService {
-	return &PaymentService{DB: db}
+func NewPaymentService(db *gorm.DB, config *PaymentServiceConfig) *PaymentService {
+	return &PaymentService{
+		DB:     db,
+		Config: config,
+	}
 }
 
 // CreatePayment 创建支付订单
 func (s *PaymentService) CreatePayment(ctx context.Context, req *paymentpb.CreatePaymentRequest) (*paymentpb.CreatePaymentResponse, error) {
+	// 开启事务
+	tx := s.DB.Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
+
 	// 生成支付ID
 	paymentID := uuid.New().String()
 
@@ -43,20 +62,30 @@ func (s *PaymentService) CreatePayment(ctx context.Context, req *paymentpb.Creat
 	}
 
 	// 保存到数据库
-	if err := s.DB.Create(payment).Error; err != nil {
+	if err := tx.Create(payment).Error; err != nil {
+		tx.Rollback()
 		logger.Log.Error("创建支付订单失败",
-			zap.String("order_id", req.OrderId),
-			zap.Error(err))
+			"order_id", req.OrderId,
+			"error", err)
 		return nil, fmt.Errorf("创建支付订单失败: %v", err)
 	}
 
-	// TODO: 根据支付方式生成支付链接和二维码
+	// 根据支付方式生成支付链接和二维码
 	paymentURL := fmt.Sprintf("/pay/%s", paymentID)
 	qrCode := fmt.Sprintf("/qr/%s", paymentID)
 
+	// 提交事务
+	if err := tx.Commit().Error; err != nil {
+		tx.Rollback()
+		logger.Log.Error("提交事务失败",
+			"payment_id", paymentID,
+			"error", err)
+		return nil, fmt.Errorf("提交事务失败: %v", err)
+	}
+
 	logger.Log.Info("创建支付订单成功",
-		zap.String("payment_id", paymentID),
-		zap.String("order_id", req.OrderId))
+		"payment_id", paymentID,
+		"order_id", req.OrderId)
 
 	return &paymentpb.CreatePaymentResponse{
 		PaymentId:  paymentID,
@@ -71,8 +100,8 @@ func (s *PaymentService) QueryPaymentStatus(ctx context.Context, req *paymentpb.
 	var payment model.Payment
 	if err := s.DB.Where("payment_id = ?", req.PaymentId).First(&payment).Error; err != nil {
 		logger.Log.Error("查询支付订单失败",
-			zap.String("payment_id", req.PaymentId),
-			zap.Error(err))
+			"payment_id", req.PaymentId,
+			"error", err)
 		return nil, fmt.Errorf("查询支付订单失败: %v", err)
 	}
 
@@ -104,9 +133,19 @@ func (s *PaymentService) HandlePaymentCallback(ctx context.Context, req *payment
 	if err := tx.Create(callback).Error; err != nil {
 		tx.Rollback()
 		logger.Log.Error("记录支付回调失败",
-			zap.String("payment_id", req.PaymentId),
-			zap.Error(err))
+			"payment_id", req.PaymentId,
+			"error", err)
 		return nil, fmt.Errorf("记录支付回调失败: %v", err)
+	}
+
+	// 查询支付订单信息
+	var payment model.Payment
+	if err := tx.Where("payment_id = ?", req.PaymentId).First(&payment).Error; err != nil {
+		tx.Rollback()
+		logger.Log.Error("查询支付订单失败",
+			"payment_id", req.PaymentId,
+			"error", err)
+		return nil, fmt.Errorf("查询支付订单失败: %v", err)
 	}
 
 	// 更新支付订单状态
@@ -118,23 +157,55 @@ func (s *PaymentService) HandlePaymentCallback(ctx context.Context, req *payment
 	}).Error; err != nil {
 		tx.Rollback()
 		logger.Log.Error("更新支付订单状态失败",
-			zap.String("payment_id", req.PaymentId),
-			zap.Error(err))
+			"payment_id", req.PaymentId,
+			"error", err)
 		return nil, fmt.Errorf("更新支付订单状态失败: %v", err)
+	}
+
+	// 如果支付成功，通知订单服务更新订单状态
+	if req.Status == "SUCCESS" {
+		// 连接订单服务
+		conn, err := grpc.Dial(s.Config.OrderServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+		if err != nil {
+			tx.Rollback()
+			logger.Log.Error("连接订单服务失败",
+				"order_service_addr", s.Config.OrderServiceAddr,
+				"error", err)
+			return nil, fmt.Errorf("连接订单服务失败: %v", err)
+		}
+		defer conn.Close()
+
+		// 创建订单服务客户端
+		orderClient := orderpb.NewOrderServiceClient(conn)
+
+		// 调用订单服务更新订单支付状态
+		_, err = orderClient.UpdateOrderPaymentStatus(ctx, &orderpb.UpdateOrderPaymentStatusRequest{
+			OrderId:   payment.OrderID,
+			PaymentId: req.PaymentId,
+			Status:    "PAID",
+		})
+
+		if err != nil {
+			tx.Rollback()
+			logger.Log.Error("通知订单服务更新订单状态失败",
+				"order_id", payment.OrderID,
+				"error", err)
+			return nil, fmt.Errorf("通知订单服务更新订单状态失败: %v", err)
+		}
 	}
 
 	// 提交事务
 	if err := tx.Commit().Error; err != nil {
 		tx.Rollback()
 		logger.Log.Error("提交事务失败",
-			zap.String("payment_id", req.PaymentId),
-			zap.Error(err))
+			"payment_id", req.PaymentId,
+			"error", err)
 		return nil, fmt.Errorf("提交事务失败: %v", err)
 	}
 
 	logger.Log.Info("处理支付回调成功",
-		zap.String("payment_id", req.PaymentId),
-		zap.String("status", req.Status))
+		"payment_id", req.PaymentId,
+		"status", req.Status)
 
 	return &paymentpb.PaymentCallbackResponse{
 		Success: true,
@@ -144,15 +215,43 @@ func (s *PaymentService) HandlePaymentCallback(ctx context.Context, req *payment
 
 // CancelPayment 取消支付订单
 func (s *PaymentService) CancelPayment(ctx context.Context, req *paymentpb.CancelPaymentRequest) (*paymentpb.CancelPaymentResponse, error) {
-	if err := s.DB.Model(&model.Payment{}).Where("payment_id = ? AND status = ?", req.PaymentId, "PENDING").Update("status", "CANCELLED").Error; err != nil {
+	// 开启事务
+	tx := s.DB.Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
+
+	// 更新支付订单状态
+	result := tx.Model(&model.Payment{}).Where("payment_id = ? AND status = ?", req.PaymentId, "PENDING").Update("status", "CANCELLED")
+	if result.Error != nil {
+		tx.Rollback()
 		logger.Log.Error("取消支付订单失败",
-			zap.String("payment_id", req.PaymentId),
-			zap.Error(err))
-		return nil, fmt.Errorf("取消支付订单失败: %v", err)
+			"payment_id", req.PaymentId,
+			"error", result.Error)
+		return nil, fmt.Errorf("取消支付订单失败: %v", result.Error)
+	}
+
+	// 检查是否有记录被更新
+	if result.RowsAffected == 0 {
+		tx.Rollback()
+		logger.Log.Warn("取消支付订单失败：订单不存在或状态不是PENDING",
+			"payment_id", req.PaymentId)
+		return nil, fmt.Errorf("订单不存在或状态不是PENDING")
+	}
+
+	// 提交事务
+	if err := tx.Commit().Error; err != nil {
+		tx.Rollback()
+		logger.Log.Error("提交事务失败",
+			"payment_id", req.PaymentId,
+			"error", err)
+		return nil, fmt.Errorf("提交事务失败: %v", err)
 	}
 
 	logger.Log.Info("取消支付订单成功",
-		zap.String("payment_id", req.PaymentId))
+		"payment_id", req.PaymentId)
 
 	return &paymentpb.CancelPaymentResponse{
 		Success: true,
@@ -165,8 +264,8 @@ func (s *PaymentService) GetPaymentDetail(ctx context.Context, req *paymentpb.Ge
 	var payment model.Payment
 	if err := s.DB.Where("payment_id = ?", req.PaymentId).First(&payment).Error; err != nil {
 		logger.Log.Error("获取支付订单详情失败",
-			zap.String("payment_id", req.PaymentId),
-			zap.Error(err))
+			"payment_id", req.PaymentId,
+			"error", err)
 		return nil, fmt.Errorf("获取支付订单详情失败: %v", err)
 	}
 
