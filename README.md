@@ -309,3 +309,8 @@ GitHub: https://github.com/ulule/limiter
 1. Gin 限流中间件代码（支持 IP / 用户 ID / 路径维度）
 2. 基于 Redis 的高可用限流实现
 3. 各种限流策略组合的配置样例
+
+
+[架构](https://i-blog.csdnimg.cn/img_convert/e0b5e75d945af7f21f8f94f58fad5cbc.png)
+
+[功能](https://i-blog.csdnimg.cn/img_convert/98fa3ad51bdfcac86752312c93272b4d.png)

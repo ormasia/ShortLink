@@ -58,11 +58,11 @@ func main() {
 		// 调用用户服务注册，已经检验过参数，所以这里有可能的错误是用户名已存在，数据库错误
 		res, registerErr := client.Register(ctx, &req)
 		if registerErr != nil {
-			// TODO: 数据库错误 区分用户名已存在和数据库错误
+			// TODO: 数据库错误 区分用户名已存在和数据库错误--不用区分，用户存在不返回错误
 			c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "注册失败", "data": nil})
 			return
 		}
-		c.JSON(http.StatusOK, gin.H{"code": 200, "message": res.Message, "data": res.Message})
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": res.Message, "data": res.Message})
 	})
 
 	r.POST("/api/v1/users/login", func(c *gin.Context) {
