@@ -11,7 +11,9 @@ import (
 	"shortLink/shortlinkcore/logger"
 	"shortLink/shortlinkcore/model"
 	"shortLink/shortlinkcore/pkg"
+	"shortLink/shortlinkcore/pkg/gopool"
 	"shortLink/shortlinkcore/pkg/locker"
+	"shortLink/shortlinkcore/pkg/safebrowsing"
 	"shortLink/shortlinkcore/service/click"
 	"time"
 
@@ -149,6 +151,51 @@ func Shorten(longUrl, userID string) (string, error) {
 		logger.Log.Error("数据库保存失败", zap.Error(err), zap.String("shortKey", shortKey))
 		return "", errors.New("持久化失败")
 	}
+
+	// 6.1 异步安全检查
+	// 使用协程池进行异步安全检查，避免阻塞主流程
+	// 如果发现不安全URL，会更新数据库状态为blocked
+	pool := gopool.GetPool()
+	pool.Submit(func() {
+		logger.Log.Info("开始安全检查", zap.String("url", longUrl))
+
+		isSafe, threatType, err := safebrowsing.CheckURL(longUrl)
+		if err != nil {
+			logger.Log.Error("安全检查失败",
+				zap.String("url", longUrl),
+				zap.Error(err))
+			return
+		}
+
+		//
+		// 如果URL不安全，需要：
+		// 1. 从缓存中删除该短链接
+		// 2. 记录警告日志，包含威胁类型
+		// 3. 更新数据库中的URL状态为blocked
+		// 4. 记录操作日志
+		if !isSafe {
+			cache.Del(shortKey)
+			logger.Log.Warn("发现不安全URL",
+				zap.String("url", longUrl),
+				zap.String("threatType", threatType))
+
+			// 更新数据库状态为blocked
+			err = model.UpdateStatus(shortKey, "blocked", threatType)
+			if err != nil {
+				logger.Log.Error("更新URL状态失败",
+					zap.String("shortURL", shortKey),
+					zap.Error(err))
+				return
+			}
+			logger.Log.Info("已封禁不安全URL",
+				zap.String("shortURL", shortKey),
+				zap.String("threatType", threatType))
+			return
+		}
+
+		logger.Log.Info("URL安全检查通过",
+			zap.String("url", longUrl))
+	})
 
 	// 7. 写入 Redis 缓存
 	cache.Set(shortKey, longUrl)

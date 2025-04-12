@@ -490,3 +490,14 @@ logger.Warn("短链删除失败", zap.Uint("userID", uid), zap.Error(err))
 - Kafka `UserDeletedEvent` 定义
 - 短链服务消费 `user-deleted` 的代码
 - 删除失败记录表 + 定时补偿逻辑
+
+
+Operation [operations/akmf.p7-643018017175-9479de28-ed40-4e58-80ba-5ca445c436f9] complete. Result: {
+    "@type":"type.googleapis.com/google.api.apikeys.v2.Key",
+    "createTime":"2025-04-12T21:30:35.999430Z",
+    "etag":"W/\"98TweNE333RgFqnItvMerg==\"",
+    "keyString":"AIzaSyDUzbJU3XMhMCpkzZkjv7kCxOKpCxbQHCg",
+    "name":"projects/643018017175/locations/global/keys/5abe104c-f44f-4347-a509-704a2cbb89b3",
+    "uid":"5abe104c-f44f-4347-a509-704a2cbb89b3",
+    "updateTime":"2025-04-12T21:30:36.047212Z"
+}

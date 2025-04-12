@@ -26,6 +26,8 @@ type URLMapping struct {
 	ShortURL    string `gorm:"primaryKey"`
 	OriginalURL string `gorm:"not null"`
 	UserID      string
+	Status      string    // pending / active / blocked
+	BlockReason string    // 可选字段，如 "Phishing"
 	CreateTime  time.Time `gorm:"autoCreateTime"`
 }
 
@@ -64,15 +66,39 @@ func SaveURLMapping(shortURL, originalURL string) error {
 	result := db.Create(&URLMapping)
 	return result.Error
 }
+
 func SaveURLMappingWithUserID(shortURL, originalURL, userID string) error {
 	urlmapping := URLMapping{
 		ShortURL:    shortURL,
 		OriginalURL: originalURL,
 		UserID:      userID,
+		Status:      "active",
+		BlockReason: "",
 	}
 	result := db.Create(&urlmapping)
 	return result.Error
 }
+
+// 更新短链接状态（status）和描述（blockReason）
+func UpdateStatus(shortURL, status, blockReason string) error {
+	result := db.Model(&URLMapping{}).
+		Where("short_url = ?", shortURL).
+		Updates(map[string]any{
+			"status":       status,
+			"block_reason": blockReason,
+		})
+
+	if result.Error != nil {
+		return result.Error
+	}
+
+	if result.RowsAffected == 0 {
+		return fmt.Errorf("短链接 %s 不存在", shortURL)
+	}
+
+	return nil
+}
+
 func GetOriginalURL(shortURL string) (string, error) {
 	var mapping URLMapping
 	result := db.First(&mapping, "short_url = ?", shortURL)
