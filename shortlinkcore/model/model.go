@@ -81,3 +81,15 @@ func GetOriginalURL(shortURL string) (string, error) {
 	}
 	return mapping.OriginalURL, nil
 }
+
+// 删除用户的所有短链
+// DeleteUserURLs 删除指定用户的所有短链接
+// 参数：
+//   - userID: 用户ID
+//
+// 返回：
+//   - error: 错误信息，如果删除成功则为nil
+func DeleteUserURLs(userID string) error {
+	result := db.Where("user_id = ?", userID).Delete(&URLMapping{})
+	return result.Error
+}
