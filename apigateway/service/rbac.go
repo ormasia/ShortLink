@@ -2,7 +2,7 @@ package service
 
 import (
 	"net/http"
-	"shortLink/model"
+	"shortLink/apigateway/model"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"

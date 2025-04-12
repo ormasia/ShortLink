@@ -56,7 +56,7 @@ func InitConfigFromNacos() error {
 	}
 
 	// 绑定到结构体
-	if err := viper.Unmarshal(&GlobalConfig); err != nil {
+	if unmarshalErr := viper.Unmarshal(&GlobalConfig); unmarshalErr != nil {
 		return fmt.Errorf("❌ 配置绑定结构体失败: %v", err)
 	}
 	// 热更新监听
