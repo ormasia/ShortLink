@@ -64,7 +64,7 @@ func (s *ShortlinkService) Redierect(ctx context.Context, req *shortlinkpb.Resol
 		return nil, fmt.Errorf("短链接不存在: %w", err)
 	}
 
-	// 2. 更新点击量
+	// 2. 异步更新点击量
 	go click.IncrClickCount(req.ShortUrl, originalURL)
 
 	// 3. 返回原始链接

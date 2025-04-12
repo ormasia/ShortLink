@@ -156,6 +156,7 @@ func main() {
 			defer cancel()
 
 			req.UserId = strconv.Itoa(int(c.GetUint("UserID")))
+			req.Concurrency = 10
 			res, err := clientShortlink.BatchShortenURLs(ctx, &req)
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "批量生成短链接失败", "data": nil})
