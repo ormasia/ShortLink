@@ -5,13 +5,13 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"time"
-
 	"shortLink/apigateway/cache"
 	"shortLink/apigateway/config"
 	"shortLink/apigateway/middleware"
 	pbShortlink "shortLink/proto/shortlinkpb"
 	pb "shortLink/proto/userpb"
+	"strconv"
+	"time"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -126,6 +126,7 @@ func main() {
 				c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "参数错误", "data": nil})
 				return
 			}
+			req.UserId = strconv.Itoa(int(c.GetUint("UserID")))
 			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 			defer cancel()
 			res, err := clientShortlink.ShortenURL(ctx, &req)
@@ -136,8 +137,8 @@ func main() {
 			c.JSON(http.StatusOK, gin.H{"code": 200, "message": "创建成功", "data": gin.H{"shortlink": res.ShortUrl}})
 		})
 
-		// 批量生成短链接
-		auth.POST("/api/v1/links/batch", func(c *gin.Context) {
+		// 批量生成短链接 - 添加特殊的批量限流中间件
+		auth.POST("/api/v1/links/batch", middleware.BatchRateLimitMiddleware(), func(c *gin.Context) {
 			var req pbShortlink.BatchShortenRequest
 			if err := c.ShouldBindJSON(&req); err != nil {
 				c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "参数错误", "data": nil})
@@ -154,6 +155,7 @@ func main() {
 			ctx, cancel := context.WithTimeout(context.Background(), 50*time.Second)
 			defer cancel()
 
+			req.UserId = strconv.Itoa(int(c.GetUint("UserID")))
 			res, err := clientShortlink.BatchShortenURLs(ctx, &req)
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "批量生成短链接失败", "data": nil})
@@ -188,8 +190,8 @@ func main() {
 			c.JSON(http.StatusOK, gin.H{"code": 200, "message": "获取成功", "data": gin.H{"top": resp.Top}})
 		})
 	}
-	// 跳转
-	r.GET("/api/v1/links/:short_url", func(c *gin.Context) {
+	// 跳转接口也添加限流
+	r.GET("/api/v1/links/:short_url", middleware.RateLimitMiddleware(), func(c *gin.Context) {
 		var req pbShortlink.ResolveRequest
 		req.ShortUrl = c.Param("short_url")
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)

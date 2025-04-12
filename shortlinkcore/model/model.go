@@ -64,7 +64,15 @@ func SaveURLMapping(shortURL, originalURL string) error {
 	result := db.Create(&URLMapping)
 	return result.Error
 }
-
+func SaveURLMappingWithUserID(shortURL, originalURL, userID string) error {
+	urlmapping := URLMapping{
+		ShortURL:    shortURL,
+		OriginalURL: originalURL,
+		UserID:      userID,
+	}
+	result := db.Create(&urlmapping)
+	return result.Error
+}
 func GetOriginalURL(shortURL string) (string, error) {
 	var mapping URLMapping
 	result := db.First(&mapping, "short_url = ?", shortURL)

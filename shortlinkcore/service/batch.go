@@ -30,7 +30,7 @@ type BatchShortenResult struct {
 // 返回：
 //   - []BatchShortenResult: 批量生成结果
 //   - error: 错误信息
-func BatchShortenURLs(ctx context.Context, urls []string, concurrency int) ([]BatchShortenResult, error) {
+func BatchShortenURLs(ctx context.Context, urls []string, userID string, concurrency int) ([]BatchShortenResult, error) {
 	logger.Log.Info("收到批量生成短链接请求",
 		zap.Int("urlCount", len(urls)),
 		zap.Int("concurrency", concurrency))
@@ -105,7 +105,7 @@ func BatchShortenURLs(ctx context.Context, urls []string, concurrency int) ([]Ba
 			}
 
 			// 生成短链接
-			shortURL, err := Shorten(originalURL)
+			shortURL, err := Shorten(originalURL, userID)
 			result := BatchShortenResult{OriginalURL: originalURL}
 
 			if err != nil {
@@ -174,7 +174,7 @@ func (s *ShortlinkService) BatchShortenURLs(ctx context.Context, req *shortlinkp
 	startTime := time.Now()
 
 	// 调用批量生成函数
-	results, err := BatchShortenURLs(ctx, req.OriginalUrls, int(req.Concurrency))
+	results, err := BatchShortenURLs(ctx, req.OriginalUrls, req.UserId, int(req.Concurrency))
 	if err != nil {
 		logger.Log.Error("批量生成短链接失败", zap.Error(err))
 		return nil, fmt.Errorf("批量生成短链接失败: %w", err)

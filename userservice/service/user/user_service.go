@@ -2,6 +2,7 @@ package user
 
 import (
 	"context"
+	"fmt"
 	"shortLink/proto/userpb"
 	"shortLink/userservice/logger"
 	"shortLink/userservice/model"
@@ -116,7 +117,7 @@ func (s *UserService) Login(ctx context.Context, req *userpb.LoginRequest) (*use
 			User:  nil,
 		}, err
 	}
-
+	fmt.Println("user.ID", user.ID)
 	// 生成令牌
 	token, err := s.authService.GenerateToken(user.ID, user.Role)
 	if err != nil {

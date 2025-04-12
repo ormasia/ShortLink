@@ -7,6 +7,7 @@ option go_package = "./proto/shortlinkpb";
 // 请求生成短链接
 message ShortenRequest {
   string original_url = 1;
+  string user_id = 2;
 }
 
 message ShortenResponse {
@@ -39,8 +40,9 @@ message TopResponse {
 message BatchShortenRequest {
   // 需要转换的原始长URL列表
   repeated string original_urls = 1;
+  string user_id = 2;
   // 并发处理的数量，默认为10
-  int32 concurrency = 2;
+  int32 concurrency = 3;
 }
 
 // 批量生成短链接的单个结果

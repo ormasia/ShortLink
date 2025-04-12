@@ -130,6 +130,10 @@ environment:
   KAFKA_CREATE_TOPICS: "shortlink-log:3:1"
 ```
 
+``` bash
+protoc --go_out=. --go-grpc_out=. proto/shortlinkpb/shortlink.proto
+```
+
 ### nacos启动问题
   必须要把grpc的端口暴露出来
   主要原因是因为调用 configClient.GetConfig方法的时候会访问grpc服务，nacos2添加了grpc通信方式，所以需要把grpc的端口也打开
@@ -314,3 +318,86 @@ GitHub: https://github.com/ulule/limiter
 [架构](https://i-blog.csdnimg.cn/img_convert/e0b5e75d945af7f21f8f94f58fad5cbc.png)
 
 [功能](https://i-blog.csdnimg.cn/img_convert/98fa3ad51bdfcac86752312c93272b4d.png)
+
+### api网关限流
+全局限流（RateLimitMiddleware）：
+  使用令牌桶算法
+  基于客户端 IP 进行限流
+  每秒最多处理 100 个请求
+  适用于所有接口
+批量创建限流（BatchRateLimitMiddleware）：
+  使用滑动窗口算法
+  基于用户 ID 进行限流
+  每分钟最多处理 10 个批量请求
+  专门用于 /api/v1/links/batch 接口
+这样的限流策略可以：
+  防止单个 IP 的恶意请求
+  保护批量创建接口不被滥用
+  确保系统在高并发下的稳定性
+您可以根据实际需求调整以下参数：
+  MaxRequests：每个时间窗口允许的最大请求数
+  WindowSize：时间窗口大小
+  Rate：令牌产生速率
+  Capacity：令牌桶容量
+
+  是的，在 Gin 框架中获取客户端 IP 地址需要注意以下几点：
+
+1. `c.ClientIP()` 方法会按以下顺序尝试获取真实 IP：
+   - X-Forwarded-For 头
+   - X-Real-IP 头
+   - RemoteAddr
+
+但是，由于您的应用可能部署在代理（如 Nginx）后面，我们需要确保获取到真实的客户端 IP。让我修改一下限流中间件的实现：
+
+
+抱歉，让我重新组织一下回答。
+
+在 Gin 框架中获取客户端 IP 地址时，需要考虑以下几种情况：
+
+1. 直接访问（无代理）：
+   - 使用 `c.RemoteIP()` 可以获取客户端 IP
+
+2. 通过代理访问（如 Nginx）：
+   - `X-Forwarded-For`: 包含请求经过的所有代理 IP，格式为 `client, proxy1, proxy2`
+   - `X-Real-IP`: 通常由代理服务器设置的真实客户端 IP
+
+建议的获取真实 IP 的逻辑如下：
+
+```go
+// 获取真实客户端IP
+func getRealIP(c *gin.Context) string {
+    // 尝试从 X-Forwarded-For 获取
+    xForwardedFor := c.GetHeader("X-Forwarded-For")
+    if xForwardedFor != "" {
+        // X-Forwarded-For 格式为：client, proxy1, proxy2
+        // 第一个 IP 是真实客户端 IP
+        ips := strings.Split(xForwardedFor, ",")
+        if len(ips) > 0 {
+            return strings.TrimSpace(ips[0])
+        }
+    }
+
+    // 尝试从 X-Real-IP 获取
+    xRealIP := c.GetHeader("X-Real-IP")
+    if xRealIP != "" {
+        return xRealIP
+    }
+
+    // 如果都没有，使用 RemoteIP
+    return c.RemoteIP()
+}
+```
+
+如果您使用 Nginx 作为反向代理，需要在 Nginx 配置中添加以下配置来传递客户端 IP：
+
+```nginx
+proxy_set_header X-Real-IP $remote_addr;
+proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+```
+
+这样可以确保在各种部署场景下都能正确获取到真实的客户端 IP。
+
+您是否需要我帮您：
+1. 修改 Nginx 配置文件？
+2. 添加更多的 IP 地址验证逻辑（如检查 IP 格式）？
+3. 实现 IP 黑名单功能？

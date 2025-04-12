@@ -1,7 +1,6 @@
 package middleware
 
 import (
-	"fmt"
 	"net/http"
 	"strings"
 
@@ -31,7 +30,6 @@ func AuthMiddleware() gin.HandlerFunc {
 			c.Abort()
 			return
 		}
-		fmt.Println("tokenStr", tokenStr)
 		// 校验 token 是否在 Redis 中存在（即是否有效）
 		cachedToken := cache.Get(tokenStr)
 		if cachedToken == "" {
@@ -39,10 +37,9 @@ func AuthMiddleware() gin.HandlerFunc {
 			c.Abort()
 			return
 		}
-
 		// 注入上下文（便于控制器获取 userID/role）
-		c.Set("userID", claims.UserID)
-		c.Set("role", claims.Role)
+		c.Set("UserID", claims.UserID)
+		c.Set("Role", claims.Role)
 
 		c.Next() // 放行
 	}

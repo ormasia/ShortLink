@@ -1,14 +1,12 @@
 package cache
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/go-redis/redis/v8"
 )
 
 var (
-	ctx = context.Background()
 	rdb *redis.Client
 )
 
@@ -30,40 +28,3 @@ func InitRedis(addr, password string, port, db int) {
 func GetRedis() *redis.Client {
 	return rdb
 }
-
-// func Set(key, value string) {
-// 	if rdb == nil {
-// 		logger.Log.Warn("Redis未初始化")
-// 		return
-// 	}
-// 	err := rdb.Set(ctx, key, value, time.Hour*24).Err()
-// 	if err != nil {
-// 		logger.Log.Error("设置缓存失败", zap.Error(err))
-// 	}
-// 	logger.Log.Info("设置缓存成功")
-// }
-
-// func Get(key string) string {
-// 	if rdb == nil {
-// 		logger.Log.Warn("Redis未初始化")
-// 		return ""
-// 	}
-// 	val, err := rdb.Get(ctx, key).Result()
-// 	if err != nil {
-// 		logger.Log.Debug("获取缓存失败", zap.Error(err), zap.String("key", key))
-// 		return ""
-// 	}
-// 	logger.Log.Info("获取缓存成功", zap.String("value", val))
-// 	return val
-// }
-
-// func Del(key string) {
-// 	if rdb == nil {
-// 		logger.Log.Warn("Redis未初始化")
-// 		return
-// 	}
-// 	err := rdb.Del(ctx, key).Err()
-// 	if err != nil {
-// 		logger.Log.Error("删除缓存失败", zap.Error(err))
-// 	}
-// }

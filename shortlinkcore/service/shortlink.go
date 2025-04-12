@@ -36,7 +36,7 @@ func (s *ShortlinkService) ShortenURL(ctx context.Context, req *shortlinkpb.Shor
 	}
 
 	// 2. 生成短链接
-	shortUrl, err := Shorten(req.OriginalUrl)
+	shortUrl, err := Shorten(req.OriginalUrl, req.UserId)
 	if err != nil {
 		logger.Log.Error("生成短链接失败",
 			zap.String("originalUrl", req.OriginalUrl),
@@ -147,7 +147,7 @@ func (s *ShortlinkService) GetTopLinks(ctx context.Context, req *shortlinkpb.Top
 // 	return shortKey, nil
 // }
 
-func Shorten(longUrl string) (string, error) {
+func Shorten(longUrl, userID string) (string, error) {
 	// 1. 校验 URL 合法性
 	if !pkg.IsValidURL(longUrl) {
 		return "", errors.New("链接非法")
@@ -192,7 +192,7 @@ func Shorten(longUrl string) (string, error) {
 	cache.AddToBloom(shortKey)
 
 	// 6. 持久化数据库
-	if err := model.SaveURLMapping(shortKey, longUrl); err != nil {
+	if err := model.SaveURLMappingWithUserID(shortKey, longUrl, userID); err != nil {
 		logger.Log.Error("数据库保存失败", zap.Error(err), zap.String("shortKey", shortKey))
 		return "", errors.New("持久化失败")
 	}
