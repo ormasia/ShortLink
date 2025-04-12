@@ -51,6 +51,7 @@ func (r *GormUserRepository) FindByID(id uint) (*model.User, error) {
 
 // DeleteByID 根据ID删除用户
 func (r *GormUserRepository) DeleteByID(id uint) (bool, error) {
+	// err := db.Where("id = ?", uid).Delete(&User{})
 	result := r.db.Delete(&model.User{}, id)
 	if result.Error != nil {
 		return false, result.Error
