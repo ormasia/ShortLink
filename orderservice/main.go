@@ -40,8 +40,7 @@ func main() {
 	if errAutoMigrate := db.AutoMigrate(
 		&model.Order{},
 		&model.OrderItem{},
-	); err != nil {
-		logger.Log.Fatal("数据库迁移失败", zap.Error(errAutoMigrate))
+	); errAutoMigrate != nil {
 	}
 
 	// 创建gRPC服务器
