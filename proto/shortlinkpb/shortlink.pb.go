@@ -547,6 +547,96 @@ func (x *BatchShortenResponse) GetElapsedTime() string {
 	return ""
 }
 
+// 删除用户短链接的请求
+type DeleteUserURLsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteUserURLsRequest) Reset() {
+	*x = DeleteUserURLsRequest{}
+	mi := &file_proto_shortlinkpb_shortlink_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteUserURLsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteUserURLsRequest) ProtoMessage() {}
+
+func (x *DeleteUserURLsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_shortlinkpb_shortlink_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteUserURLsRequest.ProtoReflect.Descriptor instead.
+func (*DeleteUserURLsRequest) Descriptor() ([]byte, []int) {
+	return file_proto_shortlinkpb_shortlink_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *DeleteUserURLsRequest) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+// 删除用户短链接的响应
+type DeleteUserURLsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	DeletedCount  int32                  `protobuf:"varint,1,opt,name=deleted_count,json=deletedCount,proto3" json:"deleted_count,omitempty"` // 删除的短链接数量
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteUserURLsResponse) Reset() {
+	*x = DeleteUserURLsResponse{}
+	mi := &file_proto_shortlinkpb_shortlink_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteUserURLsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteUserURLsResponse) ProtoMessage() {}
+
+func (x *DeleteUserURLsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_shortlinkpb_shortlink_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteUserURLsResponse.ProtoReflect.Descriptor instead.
+func (*DeleteUserURLsResponse) Descriptor() ([]byte, []int) {
+	return file_proto_shortlinkpb_shortlink_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *DeleteUserURLsResponse) GetDeletedCount() int32 {
+	if x != nil {
+		return x.DeletedCount
+	}
+	return 0
+}
+
 var File_proto_shortlinkpb_shortlink_proto protoreflect.FileDescriptor
 
 const file_proto_shortlinkpb_shortlink_proto_rawDesc = "" +
@@ -582,13 +672,18 @@ const file_proto_shortlinkpb_shortlink_proto_rawDesc = "" +
 	"\vtotal_count\x18\x02 \x01(\x05R\n" +
 	"totalCount\x12#\n" +
 	"\rsuccess_count\x18\x03 \x01(\x05R\fsuccessCount\x12!\n" +
-	"\felapsed_time\x18\x04 \x01(\tR\velapsedTime2\xae\x02\n" +
+	"\felapsed_time\x18\x04 \x01(\tR\velapsedTime\"0\n" +
+	"\x15DeleteUserURLsRequest\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\"=\n" +
+	"\x16DeleteUserURLsResponse\x12#\n" +
+	"\rdeleted_count\x18\x01 \x01(\x05R\fdeletedCount2\x85\x03\n" +
 	"\x10ShortlinkService\x12C\n" +
 	"\n" +
 	"ShortenURL\x12\x19.shortlink.ShortenRequest\x1a\x1a.shortlink.ShortenResponse\x12B\n" +
 	"\tRedierect\x12\x19.shortlink.ResolveRequest\x1a\x1a.shortlink.ResolveResponse\x12<\n" +
 	"\vGetTopLinks\x12\x15.shortlink.TopRequest\x1a\x16.shortlink.TopResponse\x12S\n" +
-	"\x10BatchShortenURLs\x12\x1e.shortlink.BatchShortenRequest\x1a\x1f.shortlink.BatchShortenResponseB\x15Z\x13./proto/shortlinkpbb\x06proto3"
+	"\x10BatchShortenURLs\x12\x1e.shortlink.BatchShortenRequest\x1a\x1f.shortlink.BatchShortenResponse\x12U\n" +
+	"\x0eDeleteUserURLs\x12 .shortlink.DeleteUserURLsRequest\x1a!.shortlink.DeleteUserURLsResponseB\x15Z\x13./proto/shortlinkpbb\x06proto3"
 
 var (
 	file_proto_shortlinkpb_shortlink_proto_rawDescOnce sync.Once
@@ -602,35 +697,39 @@ func file_proto_shortlinkpb_shortlink_proto_rawDescGZIP() []byte {
 	return file_proto_shortlinkpb_shortlink_proto_rawDescData
 }
 
-var file_proto_shortlinkpb_shortlink_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
+var file_proto_shortlinkpb_shortlink_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
 var file_proto_shortlinkpb_shortlink_proto_goTypes = []any{
-	(*ShortenRequest)(nil),       // 0: shortlink.ShortenRequest
-	(*ShortenResponse)(nil),      // 1: shortlink.ShortenResponse
-	(*ResolveRequest)(nil),       // 2: shortlink.ResolveRequest
-	(*ResolveResponse)(nil),      // 3: shortlink.ResolveResponse
-	(*TopRequest)(nil),           // 4: shortlink.TopRequest
-	(*ShortLinkItem)(nil),        // 5: shortlink.ShortLinkItem
-	(*TopResponse)(nil),          // 6: shortlink.TopResponse
-	(*BatchShortenRequest)(nil),  // 7: shortlink.BatchShortenRequest
-	(*BatchShortenResult)(nil),   // 8: shortlink.BatchShortenResult
-	(*BatchShortenResponse)(nil), // 9: shortlink.BatchShortenResponse
+	(*ShortenRequest)(nil),         // 0: shortlink.ShortenRequest
+	(*ShortenResponse)(nil),        // 1: shortlink.ShortenResponse
+	(*ResolveRequest)(nil),         // 2: shortlink.ResolveRequest
+	(*ResolveResponse)(nil),        // 3: shortlink.ResolveResponse
+	(*TopRequest)(nil),             // 4: shortlink.TopRequest
+	(*ShortLinkItem)(nil),          // 5: shortlink.ShortLinkItem
+	(*TopResponse)(nil),            // 6: shortlink.TopResponse
+	(*BatchShortenRequest)(nil),    // 7: shortlink.BatchShortenRequest
+	(*BatchShortenResult)(nil),     // 8: shortlink.BatchShortenResult
+	(*BatchShortenResponse)(nil),   // 9: shortlink.BatchShortenResponse
+	(*DeleteUserURLsRequest)(nil),  // 10: shortlink.DeleteUserURLsRequest
+	(*DeleteUserURLsResponse)(nil), // 11: shortlink.DeleteUserURLsResponse
 }
 var file_proto_shortlinkpb_shortlink_proto_depIdxs = []int32{
-	5, // 0: shortlink.TopResponse.top:type_name -> shortlink.ShortLinkItem
-	8, // 1: shortlink.BatchShortenResponse.results:type_name -> shortlink.BatchShortenResult
-	0, // 2: shortlink.ShortlinkService.ShortenURL:input_type -> shortlink.ShortenRequest
-	2, // 3: shortlink.ShortlinkService.Redierect:input_type -> shortlink.ResolveRequest
-	4, // 4: shortlink.ShortlinkService.GetTopLinks:input_type -> shortlink.TopRequest
-	7, // 5: shortlink.ShortlinkService.BatchShortenURLs:input_type -> shortlink.BatchShortenRequest
-	1, // 6: shortlink.ShortlinkService.ShortenURL:output_type -> shortlink.ShortenResponse
-	3, // 7: shortlink.ShortlinkService.Redierect:output_type -> shortlink.ResolveResponse
-	6, // 8: shortlink.ShortlinkService.GetTopLinks:output_type -> shortlink.TopResponse
-	9, // 9: shortlink.ShortlinkService.BatchShortenURLs:output_type -> shortlink.BatchShortenResponse
-	6, // [6:10] is the sub-list for method output_type
-	2, // [2:6] is the sub-list for method input_type
-	2, // [2:2] is the sub-list for extension type_name
-	2, // [2:2] is the sub-list for extension extendee
-	0, // [0:2] is the sub-list for field type_name
+	5,  // 0: shortlink.TopResponse.top:type_name -> shortlink.ShortLinkItem
+	8,  // 1: shortlink.BatchShortenResponse.results:type_name -> shortlink.BatchShortenResult
+	0,  // 2: shortlink.ShortlinkService.ShortenURL:input_type -> shortlink.ShortenRequest
+	2,  // 3: shortlink.ShortlinkService.Redierect:input_type -> shortlink.ResolveRequest
+	4,  // 4: shortlink.ShortlinkService.GetTopLinks:input_type -> shortlink.TopRequest
+	7,  // 5: shortlink.ShortlinkService.BatchShortenURLs:input_type -> shortlink.BatchShortenRequest
+	10, // 6: shortlink.ShortlinkService.DeleteUserURLs:input_type -> shortlink.DeleteUserURLsRequest
+	1,  // 7: shortlink.ShortlinkService.ShortenURL:output_type -> shortlink.ShortenResponse
+	3,  // 8: shortlink.ShortlinkService.Redierect:output_type -> shortlink.ResolveResponse
+	6,  // 9: shortlink.ShortlinkService.GetTopLinks:output_type -> shortlink.TopResponse
+	9,  // 10: shortlink.ShortlinkService.BatchShortenURLs:output_type -> shortlink.BatchShortenResponse
+	11, // 11: shortlink.ShortlinkService.DeleteUserURLs:output_type -> shortlink.DeleteUserURLsResponse
+	7,  // [7:12] is the sub-list for method output_type
+	2,  // [2:7] is the sub-list for method input_type
+	2,  // [2:2] is the sub-list for extension type_name
+	2,  // [2:2] is the sub-list for extension extendee
+	0,  // [0:2] is the sub-list for field type_name
 }
 
 func init() { file_proto_shortlinkpb_shortlink_proto_init() }
@@ -644,7 +743,7 @@ func file_proto_shortlinkpb_shortlink_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_shortlinkpb_shortlink_proto_rawDesc), len(file_proto_shortlinkpb_shortlink_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   10,
+			NumMessages:   12,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

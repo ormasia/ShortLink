@@ -190,6 +190,35 @@ func main() {
 
 			c.JSON(http.StatusOK, gin.H{"code": 200, "message": "获取成功", "data": gin.H{"top": resp.Top}})
 		})
+
+		// 删除用户的所有短链接
+		auth.DELETE("/api/v1/links", func(c *gin.Context) {
+			userID := strconv.Itoa(int(c.GetUint("UserID")))
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+
+			req := &pbShortlink.DeleteUserURLsRequest{
+				UserId: userID,
+			}
+
+			res, err := clientShortlink.DeleteUserURLs(ctx, req)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{
+					"code":    500,
+					"message": "删除短链接失败",
+					"data":    nil,
+				})
+				return
+			}
+
+			c.JSON(http.StatusOK, gin.H{
+				"code":    200,
+				"message": "删除成功",
+				"data": gin.H{
+					"deleted_count": res.DeletedCount,
+				},
+			})
+		})
 	}
 	// 跳转接口也添加限流
 	r.GET("/api/v1/links/:short_url", middleware.RateLimitMiddleware(), func(c *gin.Context) {

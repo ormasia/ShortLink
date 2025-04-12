@@ -23,6 +23,7 @@ const (
 	ShortlinkService_Redierect_FullMethodName        = "/shortlink.ShortlinkService/Redierect"
 	ShortlinkService_GetTopLinks_FullMethodName      = "/shortlink.ShortlinkService/GetTopLinks"
 	ShortlinkService_BatchShortenURLs_FullMethodName = "/shortlink.ShortlinkService/BatchShortenURLs"
+	ShortlinkService_DeleteUserURLs_FullMethodName   = "/shortlink.ShortlinkService/DeleteUserURLs"
 )
 
 // ShortlinkServiceClient is the client API for ShortlinkService service.
@@ -37,6 +38,8 @@ type ShortlinkServiceClient interface {
 	GetTopLinks(ctx context.Context, in *TopRequest, opts ...grpc.CallOption) (*TopResponse, error)
 	// 批量生成短链接
 	BatchShortenURLs(ctx context.Context, in *BatchShortenRequest, opts ...grpc.CallOption) (*BatchShortenResponse, error)
+	// 删除用户的所有短链接
+	DeleteUserURLs(ctx context.Context, in *DeleteUserURLsRequest, opts ...grpc.CallOption) (*DeleteUserURLsResponse, error)
 }
 
 type shortlinkServiceClient struct {
@@ -87,6 +90,16 @@ func (c *shortlinkServiceClient) BatchShortenURLs(ctx context.Context, in *Batch
 	return out, nil
 }
 
+func (c *shortlinkServiceClient) DeleteUserURLs(ctx context.Context, in *DeleteUserURLsRequest, opts ...grpc.CallOption) (*DeleteUserURLsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeleteUserURLsResponse)
+	err := c.cc.Invoke(ctx, ShortlinkService_DeleteUserURLs_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ShortlinkServiceServer is the server API for ShortlinkService service.
 // All implementations must embed UnimplementedShortlinkServiceServer
 // for forward compatibility.
@@ -99,6 +112,8 @@ type ShortlinkServiceServer interface {
 	GetTopLinks(context.Context, *TopRequest) (*TopResponse, error)
 	// 批量生成短链接
 	BatchShortenURLs(context.Context, *BatchShortenRequest) (*BatchShortenResponse, error)
+	// 删除用户的所有短链接
+	DeleteUserURLs(context.Context, *DeleteUserURLsRequest) (*DeleteUserURLsResponse, error)
 	mustEmbedUnimplementedShortlinkServiceServer()
 }
 
@@ -120,6 +135,9 @@ func (UnimplementedShortlinkServiceServer) GetTopLinks(context.Context, *TopRequ
 }
 func (UnimplementedShortlinkServiceServer) BatchShortenURLs(context.Context, *BatchShortenRequest) (*BatchShortenResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method BatchShortenURLs not implemented")
+}
+func (UnimplementedShortlinkServiceServer) DeleteUserURLs(context.Context, *DeleteUserURLsRequest) (*DeleteUserURLsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteUserURLs not implemented")
 }
 func (UnimplementedShortlinkServiceServer) mustEmbedUnimplementedShortlinkServiceServer() {}
 func (UnimplementedShortlinkServiceServer) testEmbeddedByValue()                          {}
@@ -214,6 +232,24 @@ func _ShortlinkService_BatchShortenURLs_Handler(srv interface{}, ctx context.Con
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ShortlinkService_DeleteUserURLs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteUserURLsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ShortlinkServiceServer).DeleteUserURLs(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ShortlinkService_DeleteUserURLs_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ShortlinkServiceServer).DeleteUserURLs(ctx, req.(*DeleteUserURLsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ShortlinkService_ServiceDesc is the grpc.ServiceDesc for ShortlinkService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -236,6 +272,10 @@ var ShortlinkService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "BatchShortenURLs",
 			Handler:    _ShortlinkService_BatchShortenURLs_Handler,
+		},
+		{
+			MethodName: "DeleteUserURLs",
+			Handler:    _ShortlinkService_DeleteUserURLs_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

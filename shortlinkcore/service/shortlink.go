@@ -100,53 +100,6 @@ func (s *ShortlinkService) GetTopLinks(ctx context.Context, req *shortlinkpb.Top
 	return &shortlinkpb.TopResponse{Top: items}, nil
 }
 
-// Shorten 将长URL转换为短链接
-// 参数：
-//   - url: 需要转换的原始长URL
-
-// 返回：
-//   - string: 生成的短链接key
-//   - error: 错误信息，如果转换成功则为nil
-// func Shorten(url string) (string, error) {
-// 	// 验证URL是否合法
-// 	if !pkg.IsValidURL(url) {
-// 		return "", errors.New("链接非法")
-// 	}
-// 	// 使用分布式锁
-// 	lock := locker.NewRedisLock(cache.GetRedis(), "lock:shorten:"+url, 3*time.Second)
-
-// 	ok, err := lock.TryLock()
-// 	if err != nil {
-// 		logger.Log.Error("加锁失败", zap.Error(err))
-// 		return "", err
-// 	}
-// 	if !ok {
-// 		return "", errors.New("请稍后再试（已被处理）")
-// 	}
-
-// 	defer lock.Unlock()
-// 	// 生成短链接
-// 	shortKey, err := pkg.GenerateShortURL(config.GlobalConfig.App.Base62Length, nil)
-// 	if err != nil {
-// 		return "", err
-// 	}
-
-// 	// 将短链接加入布隆过滤器,用于后续判断短链接是否存在
-// 	cache.AddToBloom(shortKey)
-
-// 	// 将短链接与原始URL的映射关系保存到数据库
-// 	err = model.SaveURLMapping(shortKey, url)
-// 	if err != nil {
-// 		return "", err
-// 	}
-
-// 	// 将映射关系缓存到Redis中，提高访问速度
-// 	cache.Set(shortKey, url)
-
-// 	// 返回生成的短链接key
-// 	return shortKey, nil
-// }
-
 func Shorten(longUrl, userID string) (string, error) {
 	// 1. 校验 URL 合法性
 	if !pkg.IsValidURL(longUrl) {
@@ -257,4 +210,54 @@ func Resolve(short string) (string, error) {
 		zap.String("shortUrl", short),
 		zap.String("originalUrl", original))
 	return original, nil
+}
+
+// DeleteUserURLs 删除用户的所有短链接
+func (s *ShortlinkService) DeleteUserURLs(ctx context.Context, req *shortlinkpb.DeleteUserURLsRequest) (*shortlinkpb.DeleteUserURLsResponse, error) {
+	logger.Log.Info("收到删除用户短链接请求", zap.String("userId", req.UserId))
+
+	// 1. 获取用户的所有短链接
+	var mappings []model.URLMapping
+	if err := model.GetDB().Where("user_id = ?", req.UserId).Find(&mappings).Error; err != nil {
+		logger.Log.Error("获取用户短链接失败", zap.String("userId", req.UserId), zap.Error(err))
+		return nil, fmt.Errorf("获取用户短链接失败: %w", err)
+	}
+
+	if len(mappings) == 0 {
+		logger.Log.Info("用户没有短链接", zap.String("userId", req.UserId))
+		return &shortlinkpb.DeleteUserURLsResponse{DeletedCount: 0}, nil
+	}
+
+	// 保持正确的删除顺序：先删除数据库，再删除缓存
+	/* 	线程A删除缓存
+	线程B查询数据库，发现数据还存在
+	线程B将数据写入缓存
+	线程A删除数据库
+	最终导致缓存和数据库不一致*/
+
+	// 2. 先删除数据库记录
+	result := model.GetDB().Where("user_id = ?", req.UserId).Delete(&model.URLMapping{})
+	if result.Error != nil {
+		logger.Log.Error("删除用户短链接失败", zap.String("userId", req.UserId), zap.Error(result.Error))
+		return nil, fmt.Errorf("删除用户短链接失败: %w", result.Error)
+	}
+
+	deletedCount := int32(result.RowsAffected)
+
+	// 3. 删除Redis缓存和点击量
+	redis := cache.GetRedis()
+	for _, mapping := range mappings {
+		// 删除短链接缓存
+		redis.Del(ctx, mapping.ShortURL)
+		// 删除点击量
+		redis.Del(ctx, fmt.Sprintf("click:%s-%s", mapping.ShortURL, mapping.OriginalURL))
+		// 从排行榜中删除
+		redis.ZRem(ctx, "shortlink:rank", fmt.Sprintf("%s-%s", mapping.ShortURL, mapping.OriginalURL))
+	}
+
+	logger.Log.Info("删除用户短链接成功",
+		zap.String("userId", req.UserId),
+		zap.Int32("deletedCount", deletedCount))
+
+	return &shortlinkpb.DeleteUserURLsResponse{DeletedCount: deletedCount}, nil
 }

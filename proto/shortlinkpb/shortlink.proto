@@ -67,6 +67,16 @@ message BatchShortenResponse {
   string elapsed_time = 4;
 }
 
+// 删除用户短链接的请求
+message DeleteUserURLsRequest {
+  string user_id = 1;
+}
+
+// 删除用户短链接的响应
+message DeleteUserURLsResponse {
+  int32 deleted_count = 1;  // 删除的短链接数量
+}
+
 service ShortlinkService {
   // 长链接 → 短链接
   rpc ShortenURL(ShortenRequest) returns (ShortenResponse);
@@ -79,4 +89,7 @@ service ShortlinkService {
   
   // 批量生成短链接
   rpc BatchShortenURLs (BatchShortenRequest) returns (BatchShortenResponse);
+
+  // 删除用户的所有短链接
+  rpc DeleteUserURLs (DeleteUserURLsRequest) returns (DeleteUserURLsResponse);
 }
