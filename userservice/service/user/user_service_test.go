@@ -43,6 +43,11 @@ func (m *MockUserRepository) FindByID(id uint) (*model.User, error) {
 	return args.Get(0).(*model.User), args.Error(1)
 }
 
+func (m *MockUserRepository) DeleteByID(id uint) (bool, error) {
+	args := m.Called(id)
+	return args.Get(0).(bool), args.Error(1)
+}
+
 // 模拟AuthService
 type MockAuthService struct {
 	mock.Mock

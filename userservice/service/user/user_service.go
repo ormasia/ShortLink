@@ -184,3 +184,7 @@ func (s *UserService) Logout(ctx context.Context, req *userpb.LogoutRequest) (*u
 		Message: "登出成功",
 	}, nil
 }
+
+// 注销用户
+// TODO：1，删除用户，2，删除用户缓存token，3，异步删除短链 4，删除失败的操作 5，结果补偿
+// README：注销用户

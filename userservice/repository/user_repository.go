@@ -11,6 +11,7 @@ type UserRepository interface {
 	FindByUsername(username string) (*model.User, error)
 	Create(user *model.User) error
 	FindByID(id uint) (*model.User, error)
+	DeleteByID(id uint) (bool, error)
 }
 
 // GormUserRepository 实现基于Gorm的用户数据访问
@@ -46,4 +47,16 @@ func (r *GormUserRepository) FindByID(id uint) (*model.User, error) {
 		return nil, err
 	}
 	return &user, nil
+}
+
+// DeleteByID 根据ID删除用户
+func (r *GormUserRepository) DeleteByID(id uint) (bool, error) {
+	result := r.db.Delete(&model.User{}, id)
+	if result.Error != nil {
+		return false, result.Error
+	}
+	if result.RowsAffected == 0 {
+		return false, nil
+	}
+	return true, nil
 }
