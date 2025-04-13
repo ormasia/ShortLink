@@ -501,3 +501,10 @@ Operation [operations/akmf.p7-643018017175-9479de28-ed40-4e58-80ba-5ca445c436f9]
     "uid":"5abe104c-f44f-4347-a509-704a2cbb89b3",
     "updateTime":"2025-04-12T21:30:36.047212Z"
 }
+
+https://spark-api-open.xf-yun.com/v1/chat/completions
+
+APISecret
+YjczNzY4ZTVmY2JkMjRhZTk3MzY0YTk3
+APIKey
+2e75f95c416a996edae97465ded1964b
