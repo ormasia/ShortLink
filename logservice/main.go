@@ -53,7 +53,7 @@ func main() {
 	config := sarama.NewConfig()
 	config.Producer.Return.Successes = false
 	config.Producer.Return.Errors = true
-	producer, err := sarama.NewAsyncProducer([]string{"localhost:9092"}, config)
+	producer, err := sarama.NewAsyncProducer([]string{"kafka1:9092"}, config)
 	if err != nil {
 		log.Fatal("Kafka 连接失败：", err)
 	}

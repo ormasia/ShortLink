@@ -43,7 +43,7 @@ func main() {
 	grpcServer := grpc.NewServer()
 	shortlinkpb.RegisterShortlinkServiceServer(grpcServer, &service.ShortlinkService{}) //DB: model.GetDB(), Cache: cache.GetRedis()
 
-	lis, err := net.Listen("tcp", ":8082")
+	lis, err := net.Listen("tcp", "0.0.0.0:8082")
 	if err != nil {
 		log.Fatalf("❌ 监听端口失败: %v", err)
 	}

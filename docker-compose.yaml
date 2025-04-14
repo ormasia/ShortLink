@@ -31,6 +31,7 @@ services:
     container_name: kafka1
     ports:
       - "9092:9092"
+      - "9093:9093"
     depends_on:
       - zookeeper
         # condition: service_healthy
@@ -158,7 +159,7 @@ services:
     environment:
       TZ: Asia/Shanghai
       MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: online_learning_platform
+      MYSQL_DATABASE: shortlink
     networks:
       - shortlink_net
     volumes:
@@ -202,6 +203,29 @@ services:
     ports:
       - ${ETCD_PORT}:2379
       - 2380:2380
+  api:
+    container_name : api
+    image: shortlink/api:latest
+    ports:
+      - 8080:8080
+    networks:
+      - shortlink_net
+
+  user:
+    container_name : user
+    image: shortlink/user:latest
+    ports:
+      - 8081:8081
+    networks:
+      - shortlink_net
+
+  short:
+    container_name : short
+    image: shortlink/short:latest
+    ports:
+      - 8082:8082
+    networks:
+      - shortlink_net
 
 volumes:
   esdata:

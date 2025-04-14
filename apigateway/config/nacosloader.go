@@ -12,7 +12,7 @@ import (
 
 func InitConfigFromNacos() error {
 	serverConfigs := []constant.ServerConfig{
-		*constant.NewServerConfig("127.0.0.1", 8848), // Nacos 地址
+		*constant.NewServerConfig("nacos", 8848), // Nacos 地址
 	}
 	// // 打印连接信息
 	// fmt.Printf("Nacos 服务器配置: %+v\n", serverConfigs)
@@ -37,7 +37,7 @@ func InitConfigFromNacos() error {
 
 	// 获取配置内容
 	configParam := vo.ConfigParam{
-		DataId: "shortlink", // 移除 .yaml 后缀
+		DataId: "docker", // 移除 .yaml 后缀
 		Group:  "DEFAULT_GROUP",
 	}
 	fmt.Printf("正在获取配置: DataId=%s, Group=%s\n", configParam.DataId, configParam.Group)

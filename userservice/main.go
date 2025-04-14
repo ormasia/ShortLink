@@ -67,7 +67,7 @@ func main() {
 	pb.RegisterRBACServiceServer(grpcServer, rbacService)
 
 	// 启动gRPC服务器
-	lis, err := net.Listen("tcp", ":8081")
+	lis, err := net.Listen("tcp", "0.0.0.0:8081")
 	if err != nil {
 		logger.Log.Error("failed to listen", zap.Error(err))
 		return

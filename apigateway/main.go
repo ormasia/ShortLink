@@ -41,7 +41,7 @@ func main() {
 		AllowCredentials: true,
 	}))
 
-	conn, err := grpc.NewClient("localhost:8081", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient("user:8081", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatalf("连接 user-service 失败: %v", err)
 	}
@@ -58,11 +58,12 @@ func main() {
 		// 调用用户服务注册，已经检验过参数，所以这里有可能的错误是用户名已存在，数据库错误
 		res, registerErr := client.Register(ctx, &req)
 		if registerErr != nil {
+			log.Printf("注册服务调用失败: %v\n", registerErr)
 			// TODO: 数据库错误 区分用户名已存在和数据库错误--不用区分，用户存在不返回错误
 			c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "注册失败", "data": nil})
 			return
 		}
-		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": res.Message, "data": res.Message})
+		c.JSON(http.StatusOK, gin.H{"code": 200, "message": res.Message, "data": res.Message})
 	})
 
 	r.POST("/api/v1/users/login", func(c *gin.Context) {
@@ -110,7 +111,7 @@ func main() {
 		})
 	})
 
-	connShortlink, err := grpc.NewClient("localhost:8082", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	connShortlink, err := grpc.NewClient("short:8082", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatalf("连接 user-service 失败: %v", err)
 	}

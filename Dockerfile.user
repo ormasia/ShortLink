@@ -1,0 +1,16 @@
+# 使用轻量级 Alpine Linux 作为基础镜像
+FROM alpine
+# 设置容器内工作目录
+WORKDIR /Initialuser     
+
+# 将本地编译好的可执行文件拷贝进容器
+COPY ./target/user ./user
+
+# 拷贝配置文件并移动到 config 目录
+# COPY ./config/config.yaml .
+# RUN mkdir config && mv config.yaml config/config.yaml
+
+# 暴露端口（应用监听端口）
+EXPOSE 8081                    
+# 容器启动时运行的命令
+ENTRYPOINT ["./user"] 
