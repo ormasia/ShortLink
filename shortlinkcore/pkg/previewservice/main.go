@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 
-	"shortLink/previewservice/preview"
+	"shortLink/shortlinkcore/pkg/previewservice/preview"
 )
 
 func main() {

@@ -9,6 +9,7 @@ import (
 	"shortLink/userservice/model"
 	"shortLink/userservice/mq"
 	"shortLink/userservice/repository"
+	"shortLink/userservice/scripts"
 	"shortLink/userservice/service/auth"
 	"shortLink/userservice/service/rbac"
 	"shortLink/userservice/service/user"
@@ -40,6 +41,11 @@ func main() {
 	// 初始化Redis
 	cache.InitRedis(config.GlobalConfig.Redis.Host, config.GlobalConfig.Redis.Password, config.GlobalConfig.Redis.Port, config.GlobalConfig.Redis.DB)
 	rdb := cache.GetRedis()
+
+	// 初始化角色和权限
+	if err := scripts.InitRolesAndPermissions(db); err != nil {
+		logger.Log.Error("初始化角色和权限失败", zap.Error(err))
+	}
 
 	// 创建依赖组件
 	// 1. 创建缓存适配器

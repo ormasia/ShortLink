@@ -115,6 +115,8 @@ Redis缓存：提升热点链接访问性能。
 
 易维护扩展：微服务设计便于服务的快速迭代和水平扩展。
 
+docker run -it --network host confluentinc/cp-kafka:latest bash
+kafka-topics --list --bootstrap-server localhost:9092
 
 ### 创建topic
 ``` bash

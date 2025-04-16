@@ -50,7 +50,7 @@ func main() {
 	r.POST("/api/v1/users", func(c *gin.Context) {
 		var req pb.RegisterRequest
 		if bindErr := c.ShouldBindJSON(&req); bindErr != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "参数错误", "data": nil})
+			c.JSON(http.StatusOK, gin.H{"code": 400, "message": "参数错误", "data": nil})
 			return
 		}
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
@@ -62,7 +62,7 @@ func main() {
 			c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "注册失败", "data": nil})
 			return
 		}
-		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": res.Message, "data": res.Message})
+		c.JSON(http.StatusOK, gin.H{"code": 200, "message": res.Message, "data": res.Message})
 	})
 
 	r.POST("/api/v1/users/login", func(c *gin.Context) {
