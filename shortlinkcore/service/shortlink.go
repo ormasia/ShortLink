@@ -218,6 +218,12 @@ func Shorten(longUrl, userID string) (string, error) {
 func Resolve(short string) (string, error) {
 	logger.Log.Debug("开始解析短链接", zap.String("shortUrl", short))
 
+	// 使用布隆过滤器检查短链接是否存在
+	if !cache.MightContain(short) {
+		logger.Log.Warn("布隆过滤器不存在该值", zap.String("shortUrl", short))
+		return "", errors.New("数据不存在")
+	}
+
 	// 查缓存
 	if url := cache.Get(short); url != "" {
 		logger.Log.Debug("从缓存中获取到原始链接",
@@ -233,10 +239,10 @@ func Resolve(short string) (string, error) {
 	// 2. 使用文件持久化布隆过滤器，需要使用bloom
 	// 3. 程序每次启动时全量从 DB 预热布隆过滤器
 
-	if !cache.MightContain(short) {
-		logger.Log.Warn("布隆过滤器不存在该值", zap.String("shortUrl", short))
-		return "", errors.New("数据不存在")
-	}
+	// if !cache.MightContain(short) {
+	// 	logger.Log.Warn("布隆过滤器不存在该值", zap.String("shortUrl", short))
+	// 	return "", errors.New("数据不存在")
+	// }
 
 	// 使用 singleflight 防止缓存击穿
 	logger.Log.Debug("使用singleflight从数据库获取原始链接", zap.String("shortUrl", short))
