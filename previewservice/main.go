@@ -9,7 +9,7 @@ import (
 
 func main() {
 	// 测试网页地址（推荐使用带有 Open Graph 标签的网页）
-	targetURL := "https://blog.csdn.net/weixin_43508555/article/details/104687891"
+	targetURL := "https://cloud.tencent.com/developer/article/1776068"
 
 	fmt.Println("🔍 开始提取网页信息:", targetURL)
 
@@ -18,7 +18,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("❌ 提取 OG 标签失败: %v", err)
 	}
-	content := fmt.Sprintf("%v", og)
+	content := fmt.Sprintf("content:%v", og)
 
 	// 第二步：调用 LLM 摘要（可选，视情况启用）
 	fmt.Println("\n🤖 使用 OpenAI 生成摘要...")
