@@ -2,12 +2,14 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"shortLink/apigateway/cache"
 	"shortLink/apigateway/config"
 	"shortLink/apigateway/middleware"
+	"shortLink/apigateway/pkg/discovery"
 	pbShortlink "shortLink/proto/shortlinkpb"
 	pb "shortLink/proto/userpb"
 	"strconv"
@@ -19,6 +21,42 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
+// 获取user-service实例
+func getUserServiceClient() (pb.UserServiceClient, error) {
+	// 重试3次
+	for i := 0; i < 3; i++ {
+		instances, err := discovery.GetServiceInstances("user-service1")
+		if err != nil {
+			log.Printf("获取user-service实例失败，重试 %d/3: %v", i+1, err)
+			time.Sleep(time.Second)
+			continue
+		}
+
+		if len(instances) == 0 {
+			log.Printf("没有可用的user-service实例，重试 %d/3", i+1)
+			time.Sleep(time.Second)
+			continue
+		}
+
+		// 选择第一个实例
+		instance := instances[0]
+		endpoint := fmt.Sprintf("%s:%d", instance.Ip, instance.Port)
+		log.Printf("找到user-service实例: %s", endpoint)
+
+		// 创建gRPC连接
+		conn, err := grpc.Dial(endpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
+		if err != nil {
+			log.Printf("连接user-service失败，重试 %d/3: %v", i+1, err)
+			time.Sleep(time.Second)
+			continue
+		}
+
+		return pb.NewUserServiceClient(conn), nil
+	}
+
+	return nil, fmt.Errorf("无法连接到user-service，已重试3次")
+}
+
 // 处理请求和响应，user服务只要做对应的user操作，其他服务由网关处理
 func main() {
 
@@ -28,9 +66,20 @@ func main() {
 		log.Fatalf("❌ 初始化配置失败: %v", err)
 	}
 
+	// 初始化服务发现客户端
+	if err := discovery.InitNamingClient(); err != nil {
+		log.Fatalf("初始化服务发现客户端失败: %v", err)
+	}
+
 	// 初始化Redis
 	// TODO:使用函数直接配置
 	cache.InitRedis(config.GlobalConfig.Redis.Host, config.GlobalConfig.Redis.Password, config.GlobalConfig.Redis.Port, config.GlobalConfig.Redis.DB)
+
+	// 获取user-service客户端
+	userClient, err := getUserServiceClient()
+	if err != nil {
+		log.Fatalf("获取user-service客户端失败: %v", err)
+	}
 
 	r := gin.Default()
 	// 启用跨域支持（允许前端访问）
@@ -40,75 +89,6 @@ func main() {
 		AllowHeaders:     []string{"Authorization", "Content-Type"},
 		AllowCredentials: true,
 	}))
-
-	conn, err := grpc.NewClient("localhost:8081", grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		log.Fatalf("连接 user-service 失败: %v", err)
-	}
-	client := pb.NewUserServiceClient(conn)
-
-	r.POST("/api/v1/users", func(c *gin.Context) {
-		var req pb.RegisterRequest
-		if bindErr := c.ShouldBindJSON(&req); bindErr != nil {
-			c.JSON(http.StatusOK, gin.H{"code": 400, "message": "参数错误", "data": nil})
-			return
-		}
-		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-		defer cancel()
-		// 调用用户服务注册，已经检验过参数，所以这里有可能的错误是用户名已存在，数据库错误
-		res, registerErr := client.Register(ctx, &req)
-		if registerErr != nil {
-			// TODO: 数据库错误 区分用户名已存在和数据库错误--不用区分，用户存在不返回错误
-			c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "注册失败", "data": nil})
-			return
-		}
-		c.JSON(http.StatusOK, gin.H{"code": 200, "message": res.Message, "data": res.Message})
-	})
-
-	r.POST("/api/v1/users/login", func(c *gin.Context) {
-		var req pb.LoginRequest
-		if bindErr := c.ShouldBindJSON(&req); bindErr != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "参数错误", "data": nil})
-			return
-		}
-		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-		defer cancel()
-		res, loginErr := client.Login(ctx, &req)
-		if loginErr != nil {
-			c.JSON(http.StatusUnauthorized, gin.H{"code": 401, "message": "登录失败", "data": nil})
-			return
-		}
-		c.JSON(http.StatusOK, gin.H{
-			"code":    200,
-			"message": "登录成功",
-			"data": gin.H{
-				"token": res.Token,
-				"user":  res.User,
-			},
-		})
-	})
-
-	r.POST("/api/v1/users/logout", func(c *gin.Context) {
-		var req pb.LogoutRequest
-		if bindErr := c.ShouldBindJSON(&req); bindErr != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "参数错误", "data": nil})
-			return
-		}
-		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-		defer cancel()
-		res, logoutErr := client.Logout(ctx, &req)
-		if logoutErr != nil {
-			c.JSON(http.StatusUnauthorized, gin.H{"code": 401, "message": "登出失败", "data": nil})
-			return
-		}
-		c.JSON(http.StatusOK, gin.H{
-			"code":    200,
-			"message": "登出成功",
-			"data": gin.H{
-				"message": res.Message,
-			},
-		})
-	})
 
 	connShortlink, err := grpc.NewClient("localhost:8082", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
@@ -232,6 +212,70 @@ func main() {
 			return
 		}
 		c.Redirect(http.StatusFound, res.OriginalUrl)
+	})
+
+	// 用户注册
+	r.POST("/api/v1/users", func(c *gin.Context) {
+		var req pb.RegisterRequest
+		if bindErr := c.ShouldBindJSON(&req); bindErr != nil {
+			c.JSON(http.StatusOK, gin.H{"code": 400, "message": "参数错误", "data": nil})
+			return
+		}
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+		res, registerErr := userClient.Register(ctx, &req)
+		if registerErr != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "注册失败", "data": nil})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"code": 200, "message": res.Message, "data": res.Message})
+	})
+
+	// 用户登录
+	r.POST("/api/v1/users/login", func(c *gin.Context) {
+		var req pb.LoginRequest
+		if bindErr := c.ShouldBindJSON(&req); bindErr != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "参数错误", "data": nil})
+			return
+		}
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+		res, loginErr := userClient.Login(ctx, &req)
+		if loginErr != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"code": 401, "message": "登录失败", "data": nil})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{
+			"code":    200,
+			"message": "登录成功",
+			"data": gin.H{
+				"token": res.Token,
+				"user":  res.User,
+			},
+		})
+	})
+
+	// 用户登出
+	r.POST("/api/v1/users/logout", func(c *gin.Context) {
+		var req pb.LogoutRequest
+		if bindErr := c.ShouldBindJSON(&req); bindErr != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "参数错误", "data": nil})
+			return
+		}
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+		res, logoutErr := userClient.Logout(ctx, &req)
+		if logoutErr != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"code": 401, "message": "登出失败", "data": nil})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{
+			"code":    200,
+			"message": "登出成功",
+			"data": gin.H{
+				"message": res.Message,
+			},
+		})
 	})
 
 	port := os.Getenv("GATEWAY_PORT")

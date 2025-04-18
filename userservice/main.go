@@ -3,16 +3,20 @@ package main
 import (
 	"log"
 	"net"
+	"os"
+	"os/signal"
 	"shortLink/userservice/cache"
 	"shortLink/userservice/config"
 	"shortLink/userservice/logger"
 	"shortLink/userservice/model"
 	"shortLink/userservice/mq"
+	"shortLink/userservice/pkg/discovery"
 	"shortLink/userservice/repository"
 	"shortLink/userservice/scripts"
 	"shortLink/userservice/service/auth"
 	"shortLink/userservice/service/rbac"
 	"shortLink/userservice/service/user"
+	"syscall"
 	"time"
 
 	pb "shortLink/proto/userpb"
@@ -78,6 +82,35 @@ func main() {
 		logger.Log.Error("failed to listen", zap.Error(err))
 		return
 	}
+
+	// 初始化服务发现客户端
+	if err := discovery.InitNamingClient(); err != nil {
+		logger.Log.Error("初始化服务发现客户端失败", zap.Error(err))
+		return
+	}
+
+	// 注册服务
+	if err := discovery.RegisterService(); err != nil {
+		logger.Log.Error("注册服务失败", zap.Error(err))
+		return
+	}
+
+	// 优雅退出
+	go func() {
+		sigCh := make(chan os.Signal, 1)
+		signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM) //注册信号处理器的函数，信号进入sigCh，原本阻塞的channel就恢复了
+		<-sigCh
+
+		logger.Log.Info("正在关闭服务...")
+
+		// 注销服务
+		if err := discovery.DeregisterService(); err != nil {
+			logger.Log.Error("注销服务失败", zap.Error(err))
+		}
+
+		// 停止gRPC服务器
+		grpcServer.GracefulStop()
+	}()
 
 	logger.Log.Info("gRPC server started on :8081")
 	if err := grpcServer.Serve(lis); err != nil {

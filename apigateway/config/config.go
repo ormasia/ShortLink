@@ -14,6 +14,7 @@ type Config struct {
 	Kafka  KafkaConfig
 	Logger LoggerConfig
 	App    AppConfig
+	Nacos  NacosConfig
 }
 
 type MySQLConfig struct {
@@ -59,6 +60,17 @@ type AppConfig struct {
 	JWTExpire    int
 	Base62Length int
 	MaxRetries   int `mapstructure:"max_retries"`
+}
+
+type NacosConfig struct {
+	ServiceName string
+	GroupName   string
+	Namespace   string
+	Weight      int
+	Enabled     bool
+	Ip          string
+	Port        int
+	Metadata    map[string]string
 }
 
 var GlobalConfig Config
