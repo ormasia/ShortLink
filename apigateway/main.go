@@ -57,6 +57,42 @@ func getUserServiceClient() (pb.UserServiceClient, error) {
 	return nil, fmt.Errorf("无法连接到user-service，已重试3次")
 }
 
+// 获取shortlink-service实例
+func getShortlinkServiceClient() (pbShortlink.ShortlinkServiceClient, error) {
+	// 重试3次
+	for i := 0; i < 3; i++ {
+		instances, err := discovery.GetServiceInstances("shortlink-service")
+		if err != nil {
+			log.Printf("获取shortlink-service实例失败，重试 %d/3: %v", i+1, err)
+			time.Sleep(time.Second)
+			continue
+		}
+
+		if len(instances) == 0 {
+			log.Printf("没有可用的shortlink-service实例，重试 %d/3", i+1)
+			time.Sleep(time.Second)
+			continue
+		}
+
+		// 选择第一个实例
+		instance := instances[0]
+		endpoint := fmt.Sprintf("%s:%d", instance.Ip, instance.Port)
+		log.Printf("找到shortlink-service实例: %s", endpoint)
+
+		// 创建gRPC连接
+		conn, err := grpc.Dial(endpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
+		if err != nil {
+			log.Printf("连接shortlink-service失败，重试 %d/3: %v", i+1, err)
+			time.Sleep(time.Second)
+			continue
+		}
+
+		return pbShortlink.NewShortlinkServiceClient(conn), nil
+	}
+
+	return nil, fmt.Errorf("无法连接到shortlink-service，已重试3次")
+}
+
 // 处理请求和响应，user服务只要做对应的user操作，其他服务由网关处理
 func main() {
 
@@ -81,6 +117,12 @@ func main() {
 		log.Fatalf("获取user-service客户端失败: %v", err)
 	}
 
+	// 获取shortlink-service实例
+	shortlinkClient, err := getShortlinkServiceClient()
+	if err != nil {
+		log.Fatalf("获取shortlink-service客户端失败: %v", err)
+	}
+
 	r := gin.Default()
 	// 启用跨域支持（允许前端访问）
 	r.Use(cors.New(cors.Config{
@@ -89,12 +131,6 @@ func main() {
 		AllowHeaders:     []string{"Authorization", "Content-Type"},
 		AllowCredentials: true,
 	}))
-
-	connShortlink, err := grpc.NewClient("localhost:8082", grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		log.Fatalf("连接 user-service 失败: %v", err)
-	}
-	clientShortlink := pbShortlink.NewShortlinkServiceClient(connShortlink)
 
 	auth := r.Group("/")
 	auth.Use(middleware.AuthMiddleware()) // JWT 鉴权中间件
@@ -109,7 +145,7 @@ func main() {
 			req.UserId = strconv.Itoa(int(c.GetUint("UserID")))
 			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 			defer cancel()
-			res, err := clientShortlink.ShortenURL(ctx, &req)
+			res, err := shortlinkClient.ShortenURL(ctx, &req)
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "创建短链接失败", "data": nil})
 				return
@@ -137,7 +173,7 @@ func main() {
 
 			req.UserId = strconv.Itoa(int(c.GetUint("UserID")))
 			req.Concurrency = 10
-			res, err := clientShortlink.BatchShortenURLs(ctx, &req)
+			res, err := shortlinkClient.BatchShortenURLs(ctx, &req)
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "批量生成短链接失败", "data": nil})
 				return
@@ -162,7 +198,7 @@ func main() {
 			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 			defer cancel()
 
-			resp, err := clientShortlink.GetTopLinks(ctx, req)
+			resp, err := shortlinkClient.GetTopLinks(ctx, req)
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "获取排行榜失败", "data": nil})
 				return
@@ -181,7 +217,7 @@ func main() {
 				UserId: userID,
 			}
 
-			res, err := clientShortlink.DeleteUserURLs(ctx, req)
+			res, err := shortlinkClient.DeleteUserURLs(ctx, req)
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{
 					"code":    500,
@@ -206,7 +242,7 @@ func main() {
 		req.ShortUrl = c.Param("short_url")
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 		defer cancel()
-		res, err := clientShortlink.Redierect(ctx, &req)
+		res, err := shortlinkClient.Redierect(ctx, &req)
 		if err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"code": 404, "message": "短链接无效", "data": nil})
 			return

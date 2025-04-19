@@ -3,13 +3,17 @@ package main
 import (
 	"log"
 	"net"
+	"os"
+	"os/signal"
 	"shortLink/proto/shortlinkpb"
 	"shortLink/shortlinkcore/cache"
 	"shortLink/shortlinkcore/config"
 	"shortLink/shortlinkcore/logger"
 	"shortLink/shortlinkcore/model"
 	"shortLink/shortlinkcore/mq"
+	"shortLink/shortlinkcore/pkg/discovery"
 	"shortLink/shortlinkcore/service"
+	"syscall"
 
 	"go.uber.org/zap/zapcore"
 	"google.golang.org/grpc"
@@ -47,8 +51,35 @@ func main() {
 	if err != nil {
 		log.Fatalf("❌ 监听端口失败: %v", err)
 	}
-	log.Println("✅ shortlink-core gRPC 服务已启动，监听端口 :8082")
 
+	// 初始化服务发现客户端
+	if err := discovery.InitNamingClient(); err != nil {
+		log.Fatalf("初始化服务发现客户端失败: %v", err)
+	}
+
+	// 注册服务
+	if err := discovery.RegisterService(); err != nil {
+		log.Fatalf("注册服务失败: %v", err)
+	}
+
+	// 优雅退出
+	go func() {
+		sigCh := make(chan os.Signal, 1)
+		signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
+		<-sigCh
+
+		log.Println("正在关闭服务...")
+
+		// 注销服务
+		if err := discovery.DeregisterService(); err != nil {
+			log.Printf("注销服务失败: %v", err)
+		}
+
+		// 停止gRPC服务器
+		grpcServer.GracefulStop()
+	}()
+
+	log.Println("✅ shortlink-core gRPC 服务已启动，监听端口 :8082")
 	if err := grpcServer.Serve(lis); err != nil {
 		log.Fatalf("❌ 启动 gRPC 服务失败: %v", err)
 	}

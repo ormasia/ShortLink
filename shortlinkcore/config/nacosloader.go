@@ -59,6 +59,20 @@ func InitConfigFromNacos() error {
 	if err := viper.Unmarshal(&GlobalConfig); err != nil {
 		return fmt.Errorf("❌ 配置绑定结构体失败: %v", err)
 	}
+
+	// 设置服务发现相关配置
+	GlobalConfig.Nacos.ServiceName = "shortlink-service"
+	GlobalConfig.Nacos.GroupName = "DEFAULT_GROUP"
+	GlobalConfig.Nacos.Namespace = ""
+	GlobalConfig.Nacos.Weight = 1
+	GlobalConfig.Nacos.Enabled = true
+	GlobalConfig.Nacos.Ip = "127.0.0.1"
+	GlobalConfig.Nacos.Port = 8082
+	GlobalConfig.Nacos.Metadata = map[string]string{
+		"version": "1.0.0",
+		"env":     "dev",
+	}
+
 	// 热更新监听
 	err = client.ListenConfig(vo.ConfigParam{
 		DataId: "shortlink",
