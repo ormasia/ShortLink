@@ -203,6 +203,20 @@ services:
       - ${ETCD_PORT}:2379
       - 2380:2380
 
+  elastalert:
+    image: bitsensor/elastalert:latest
+    volumes:
+      - ./logservice/elastalert/config.yaml:/opt/elastalert/config.yaml
+      - ./logservice/elastalert/rules:/opt/elastalert/rules
+      - ./logservice/elastalert/smtp_auth.yaml:/opt/elastalert/smtp_auth.yaml
+    environment:
+      - ELASTICSEARCH_HOST=elasticsearch
+      - ELASTICSEARCH_PORT=9200
+    depends_on:
+      - elasticsearch
+    networks:
+      - shortlink_net
+
 volumes:
   esdata:
 

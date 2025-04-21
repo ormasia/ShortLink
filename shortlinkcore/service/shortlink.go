@@ -11,6 +11,7 @@ import (
 	"shortLink/shortlinkcore/logger"
 	"shortLink/shortlinkcore/model"
 	"shortLink/shortlinkcore/pkg"
+	"shortLink/shortlinkcore/pkg/circuitbreaker"
 	"shortLink/shortlinkcore/pkg/gopool"
 	"shortLink/shortlinkcore/pkg/locker"
 	"shortLink/shortlinkcore/pkg/safebrowsing"
@@ -20,8 +21,17 @@ import (
 	"go.uber.org/zap"
 )
 
+// ShortlinkService 实现短链接服务
 type ShortlinkService struct {
 	shortlinkpb.UnimplementedShortlinkServiceServer
+	cb *circuitbreaker.DefaultCircuitBreaker
+}
+
+// NewShortlinkService 创建短链接服务实例
+func NewShortlinkService() *ShortlinkService {
+	return &ShortlinkService{
+		cb: circuitbreaker.NewDefaultCircuitBreaker("shortlink-service"),
+	}
 }
 
 // 生成短链接

@@ -45,7 +45,7 @@ func main() {
 
 	// 创建 gRPC 服务器并注册服务
 	grpcServer := grpc.NewServer()
-	shortlinkpb.RegisterShortlinkServiceServer(grpcServer, &service.ShortlinkService{}) //DB: model.GetDB(), Cache: cache.GetRedis()
+	shortlinkpb.RegisterShortlinkServiceServer(grpcServer, service.NewShortlinkService())
 
 	lis, err := net.Listen("tcp", ":8082")
 	if err != nil {

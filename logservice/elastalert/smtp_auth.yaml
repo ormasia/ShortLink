@@ -1,0 +1,3 @@
+# QQ 邮箱 SMTP 认证配置
+user: "your-qq@qq.com"  # 替换为您的 QQ 邮箱
+password: "your-authorization-code"  # 替换为您的授权码 

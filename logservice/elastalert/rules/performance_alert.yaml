@@ -1,0 +1,31 @@
+# 性能监控告警规则
+name: Performance Alert
+type: metric_aggregation
+index: shortlink-log-*
+buffer_time:
+  minutes: 5
+metric_agg_key: response_time
+metric_agg_type: avg
+query_key: service_name
+doc_type: logs
+bucket_interval:
+  minutes: 5
+sync_bucket_interval: true
+min_threshold: 1000
+max_threshold: null
+
+filter:
+- query:
+    query_string:
+      query: "type:performance"
+
+alert:
+- "email"
+email:
+- "your-qq@qq.com"  # 替换为您的 QQ 邮箱
+smtp_host: "smtp.qq.com"
+smtp_port: 465
+smtp_ssl: true
+from_addr: "your-qq@qq.com"  # 替换为您的 QQ 邮箱
+smtp_auth_file: "/opt/elastalert/smtp_auth.yaml"
+email_reply_to: "your-qq@qq.com"  # 替换为您的 QQ 邮箱 
