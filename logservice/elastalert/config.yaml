@@ -1,11 +1,20 @@
-# ElastAlert 主配置文件
-rules_folder: rules
+# 主配置文件 config.yaml
+rules_folder: /opt/elastalert/rules
 run_every:
   minutes: 1
 buffer_time:
   minutes: 15
 es_host: elasticsearch
 es_port: 9200
+es_ssl: false
 writeback_index: elastalert_status
 alert_time_limit:
-  days: 2 
+  days: 2
+
+# 邮件通用配置
+smtp_host: smtp.qq.com
+smtp_port: 465
+smtp_ssl: true
+from_addr: "347820478@qq.com"
+smtp_auth_file: /opt/elastalert/smtp_auth.yaml
+email_reply_to: "347820478@qq.com"

@@ -1,4 +1,27 @@
-# 错误日志告警规则
+# # 错误日志告警规则
+# name: Error Log Alert
+# type: frequency
+# index: shortlink-log-*
+# num_events: 5
+# timeframe:
+#   minutes: 5
+
+# filter:
+# - query:
+#     query_string:
+#       query: "level:ERROR"
+
+# alert:
+# - "email"
+# email:
+# - "347820478@qq.com"  # 替换为您的 QQ 邮箱
+# smtp_host: "smtp.qq.com"
+# smtp_port: 465
+# smtp_ssl: true
+# from_addr: "347820478@qq.com"  # 替换为您的 QQ 邮箱
+# smtp_auth_file: "/opt/elastalert/smtp_auth.yaml"
+# email_reply_to: "347820478@qq.com"  # 替换为您的 QQ 邮箱 
+
 name: Error Log Alert
 type: frequency
 index: shortlink-log-*
@@ -9,15 +32,9 @@ timeframe:
 filter:
 - query:
     query_string:
-      query: "level:ERROR"
+      query: "level:WARN"
 
 alert:
 - "email"
 email:
-- "your-qq@qq.com"  # 替换为您的 QQ 邮箱
-smtp_host: "smtp.qq.com"
-smtp_port: 465
-smtp_ssl: true
-from_addr: "your-qq@qq.com"  # 替换为您的 QQ 邮箱
-smtp_auth_file: "/opt/elastalert/smtp_auth.yaml"
-email_reply_to: "your-qq@qq.com"  # 替换为您的 QQ 邮箱 
+- "347820478@qq.com"
