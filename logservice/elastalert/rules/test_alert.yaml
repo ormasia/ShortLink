@@ -1,0 +1,24 @@
+name: Test Error Alert
+type: frequency
+index: shortlink-log-*
+num_events: 1
+timeframe:
+  minutes: 5
+filter:
+- query:
+    query_string:
+      query: "level:ERROR"
+alert:
+- "email"
+email:
+- "347820478@qq.com"
+email_format: html
+email_subject: "测试告警 - 发现错误日志"
+email_body: |
+  <h2>错误日志告警</h2>
+  <p>发现错误日志：</p>
+  <pre>
+  {{message}}
+  </pre>
+  <p>时间：{{@timestamp}}</p>
+  <p>服务：{{service}}</p> 
